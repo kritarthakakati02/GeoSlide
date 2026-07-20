@@ -1,0 +1,88 @@
+{
+  "project": "GeoSlide - WSN Landslide Prediction",
+  "phase": "Phase 8 - Production Model Export",
+  "export_timestamp_utc": "2026-07-20T05:36:36.822982+00:00",
+  "prediction_model": {
+    "name": "K-Nearest Neighbors (KNN)",
+    "role": "final production prediction model",
+    "file": "models/knn_model.joblib",
+    "library": "scikit-learn",
+    "class": "KNeighborsClassifier",
+    "hyperparameters": {
+      "algorithm": "auto",
+      "leaf_size": 30,
+      "metric": "minkowski",
+      "metric_params": null,
+      "n_jobs": null,
+      "n_neighbors": 5,
+      "p": 2,
+      "weights": "uniform"
+    },
+    "trained_on": "StandardScaler-transformed features"
+  },
+  "explainability_model": {
+    "name": "Random Forest",
+    "role": "SHAP explainability model (TreeExplainer)",
+    "file": "models/rf_explainer.joblib",
+    "library": "scikit-learn",
+    "class": "RandomForestClassifier",
+    "hyperparameters": {
+      "n_estimators": 200,
+      "random_state": 42
+    },
+    "trained_on": "StandardScaler-transformed features",
+    "note": "Used exclusively for SHAP explanations; does not replace the KNN prediction model."
+  },
+  "target_column": "Label",
+  "random_state": 42,
+  "train_test_split": {
+    "test_size": 0.2,
+    "train_size": 0.8,
+    "stratified": true
+  },
+  "scaler": {
+    "name": "StandardScaler",
+    "file": "models/scaler.joblib",
+    "fit_on": "X_train only (no data leakage)"
+  },
+  "features": {
+    "count": 34,
+    "file": "models/feature_names.pkl",
+    "names": [
+      "Rainfall_mm",
+      "Slope_Angle",
+      "Soil_Saturation",
+      "Vegetation_Cover",
+      "Rainfall_3Day",
+      "Rainfall_7Day",
+      "Aspect",
+      "Elevation_m",
+      "NDVI_Index",
+      "Land_Use_Urban",
+      "Land_Use_Forest",
+      "Land_Use_Agriculture",
+      "Earthquake_Activity",
+      "Proximity_to_Water",
+      "Distance_to_Road_m",
+      "Temperature_C",
+      "Humidity_percent",
+      "Soil_pH",
+      "Clay_Content",
+      "Sand_Content",
+      "Silt_Content",
+      "Soil_Erosion_Rate",
+      "Historical_Landslide_Count",
+      "Soil_Type_Gravel",
+      "Soil_Type_Sand",
+      "Soil_Type_Silt",
+      "Soil_Type_Clay",
+      "Pore_Water_Pressure_kPa",
+      "Soil_Moisture_Content",
+      "Microseismic_Activity",
+      "Acoustic_Emission_dB",
+      "Soil_Strain",
+      "Soil_Temperature_C",
+      "TDR_Reflection_Index"
+    ]
+  }
+}
