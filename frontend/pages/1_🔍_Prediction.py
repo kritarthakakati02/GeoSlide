@@ -13,6 +13,7 @@ requests, and no SHAP explanations are implemented here.
 
 import streamlit as st
 
+from components.sidebar import render_sidebar
 from utils import api
 from utils.helpers import (
     LAND_USE_OPTIONS,
@@ -175,6 +176,12 @@ def _collect_form_payload() -> dict:
 
     return payload
 
+
+# ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
+
+render_sidebar()
 
 # ---------------------------------------------------------------------------
 # Page Header
