@@ -1,19 +1,20 @@
 # Python cache
 __pycache__/
-*.pyc
+*.py[cod]
 
-# Jupyter checkpoints
+# Jupyter
 .ipynb_checkpoints/
 
 # Virtual environments
 venv/
 .venv/
 
-# Model files
-*.joblib
-*.pkl
-*.keras
+# VS Code
+.vscode/
 
-# Operating system files
+# Environment variables
+.env
+
+# OS files
 .DS_Store
 Thumbs.db

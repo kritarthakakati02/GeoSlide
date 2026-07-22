@@ -1,0 +1,10 @@
+# data/
+#
+# Purpose:
+#   Reserved directory for frontend-local data files (e.g. cached
+#   datasets, sample data, or exported artifacts used by the Streamlit
+#   app). Intentionally empty for now.
+#
+# Scope note (Phase 10.1 - Frontend Foundation):
+#   No data files have been added yet. This placeholder file exists
+#   only so the empty directory is preserved in version control.

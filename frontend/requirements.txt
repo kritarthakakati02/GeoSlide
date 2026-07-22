@@ -1,0 +1,11 @@
+# requirements.txt
+#
+# Frontend-only dependencies for the GeoSlide Streamlit application.
+# Backend/API dependencies (FastAPI, uvicorn, ML libraries, etc.) are
+# intentionally excluded and managed separately in the backend folder.
+
+streamlit
+pandas
+numpy
+plotly
+requests
