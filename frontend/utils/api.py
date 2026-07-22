@@ -1,127 +1,132 @@
 """
 GeoSlide - Frontend API Client
 ================================
-Placeholder API layer for communicating with the GeoSlide FastAPI backend.
+HTTP layer for communicating with the GeoSlide FastAPI backend.
 
-Phase 10.3 (Part 1) only builds the Prediction Page UI. Actual HTTP
-communication with the backend is intentionally NOT implemented yet.
-Functions in this module are stubs that define the expected interface
-for future phases and raise NotImplementedError until wired up.
+Phase 10.4 - Backend Integration: wires the Streamlit frontend up to
+the real `/predict` and `/` (health-check) endpoints exposed by the
+FastAPI backend, with explicit handling for connection failures,
+timeouts, and invalid responses so the UI can fail gracefully instead
+of crashing.
 """
 
 from typing import Any, Dict
 
+import requests
 
-def predict(payload: Dict[str, Any]) -> Dict[str, Any]:
+from utils.constants import HEALTH_ENDPOINT, PREDICT_ENDPOINT, REQUEST_TIMEOUT
+
+
+class APIError(Exception):
+    """Base class for all GeoSlide API client errors."""
+
+
+class BackendUnavailableError(APIError):
+    """Raised when the FastAPI backend cannot be reached at all."""
+
+
+class BackendTimeoutError(APIError):
+    """Raised when the backend does not respond within REQUEST_TIMEOUT."""
+
+
+class InvalidResponseError(APIError):
+    """Raised when the backend responds, but with bad data or a bad status."""
+
+
+def predict(features: list) -> Dict[str, Any]:
     """
     Send a landslide risk prediction request to the backend.
 
-    This is a placeholder for future phases. It does NOT make any
-    network/API calls yet.
-
     Args:
-        payload: Dictionary of feature values collected from the
-            Prediction Page form (including one-hot encoded
-            Land Use / Soil Type fields).
+        features: Ordered list of numeric feature values matching
+            utils.constants.FEATURE_ORDER exactly.
 
     Returns:
-        Expected (future) shape:
-            {
-                "risk_level": str,
-                "probability": float,
-                "status": str,
-            }
+        {
+            "prediction": int,
+            "probability": float,
+            "risk_level": str,
+        }
 
     Raises:
-        NotImplementedError: Always, until backend integration is
-            implemented in a later phase.
+        BackendUnavailableError: If the backend can't be reached
+            (connection refused, DNS failure, etc.).
+        BackendTimeoutError: If the backend doesn't respond in time.
+        InvalidResponseError: If the backend returns a non-2xx status
+            or a response body that can't be parsed / doesn't match
+            the expected shape.
     """
-    raise NotImplementedError(
-        "predict() is not implemented yet. "
-        "Backend integration will be added in a later phase."
-    )
+    try:
+        response = requests.post(
+            PREDICT_ENDPOINT,
+            json={"features": features},
+            timeout=REQUEST_TIMEOUT,
+        )
+    except requests.exceptions.ConnectionError as exc:
+        raise BackendUnavailableError(
+            f"Could not connect to the GeoSlide backend at {PREDICT_ENDPOINT}. "
+            "Make sure the FastAPI server is running."
+        ) from exc
+    except requests.exceptions.Timeout as exc:
+        raise BackendTimeoutError(
+            f"The backend did not respond within {REQUEST_TIMEOUT} seconds."
+        ) from exc
+    except requests.exceptions.RequestException as exc:
+        raise APIError(f"Unexpected error while contacting the backend: {exc}") from exc
+
+    if response.status_code != 200:
+        try:
+            detail = response.json().get("detail", response.text)
+        except ValueError:
+            detail = response.text
+        raise InvalidResponseError(
+            f"Backend returned an error (HTTP {response.status_code}): {detail}"
+        )
+
+    try:
+        data = response.json()
+    except ValueError as exc:
+        raise InvalidResponseError("Backend returned a response that was not valid JSON.") from exc
+
+    missing = {"prediction", "probability", "risk_level"} - data.keys()
+    if missing:
+        raise InvalidResponseError(
+            f"Backend response is missing expected field(s): {', '.join(sorted(missing))}"
+        )
+
+    return data
 
 
 def check_health() -> Dict[str, Any]:
     """
-    Placeholder for a future backend health-check call.
-
-    Raises:
-        NotImplementedError: Always, until backend integration is
-            implemented in a later phase.
-    """
-    raise NotImplementedError(
-        "check_health() is not implemented yet. "
-        "Backend integration will be added in a later phase."
-    )
-
-
-def get_shap_explanation(prediction_data: Dict[str, Any] = None) -> Dict[str, Any]:
-    """
-    Retrieve a SHAP explainability breakdown for a landslide risk
-    prediction.
-
-    NOTE: The backend does not yet expose a SHAP explainability
-    endpoint, so this function does NOT make any network/API calls.
-    It always returns placeholder/mock data so the SHAP Analysis page
-    can be built and demoed independently of the backend. Once a real
-    `/shap/explain` (or similar) backend endpoint exists, this function
-    should be updated to call it (e.g. via `requests.post(...)`) and
-    fall back to placeholder data only on error.
-
-    Args:
-        prediction_data: Optional dictionary describing the prediction
-            to explain (e.g. the most recent result from the
-            Prediction page's session state). Currently unused beyond
-            being accepted for forward-compatibility with the future
-            real implementation.
+    Check whether the GeoSlide backend is up and responding.
 
     Returns:
-        A dictionary shaped like the eventual backend response:
-            {
-                "feature_importance": [
-                    {"feature": str, "importance": float}, ...
-                ],
-                "local_explanation": {
-                    "positive": [{"feature": str, "impact": float}, ...],
-                    "negative": [{"feature": str, "impact": float}, ...],
-                },
-                "ai_interpretation": str,
-                "status": "placeholder",
-            }
+        The JSON body of the root health-check endpoint.
+
+    Raises:
+        BackendUnavailableError: If the backend can't be reached.
+        BackendTimeoutError: If the backend doesn't respond in time.
+        InvalidResponseError: If the backend responds with a non-2xx
+            status or invalid JSON.
     """
-    return {
-        "feature_importance": [
-            {"feature": "Soil Saturation", "importance": 0.27},
-            {"feature": "Rainfall (Last 7 Days)", "importance": 0.22},
-            {"feature": "Slope Angle", "importance": 0.18},
-            {"feature": "Pore Water Pressure", "importance": 0.14},
-            {"feature": "NDVI Index", "importance": 0.09},
-            {"feature": "Distance to Road", "importance": 0.06},
-            {"feature": "Soil Type (Clay)", "importance": 0.04},
-        ],
-        "local_explanation": {
-            "positive": [
-                {"feature": "Soil Saturation", "impact": 0.18},
-                {"feature": "Rainfall (Last 7 Days)", "impact": 0.15},
-                {"feature": "Slope Angle", "impact": 0.11},
-            ],
-            "negative": [
-                {"feature": "Vegetation Cover", "impact": -0.09},
-                {"feature": "Distance to Road", "impact": -0.06},
-                {"feature": "Soil pH", "impact": -0.03},
-            ],
-        },
-        "ai_interpretation": (
-            "The model's prediction was driven primarily by elevated soil "
-            "saturation and heavy rainfall over the past 7 days, both of "
-            "which are strongly associated with increased landslide risk. "
-            "Steep slope angle further amplified the risk score. On the "
-            "other hand, healthy vegetation cover and a greater distance "
-            "from the nearest road slightly reduced the predicted risk. "
-            "This is placeholder text and will be replaced with a "
-            "real, model-generated interpretation once the backend SHAP "
-            "endpoint is available."
-        ),
-        "status": "placeholder",
-    }
+    try:
+        response = requests.get(HEALTH_ENDPOINT, timeout=REQUEST_TIMEOUT)
+    except requests.exceptions.ConnectionError as exc:
+        raise BackendUnavailableError(
+            f"Could not connect to the GeoSlide backend at {HEALTH_ENDPOINT}."
+        ) from exc
+    except requests.exceptions.Timeout as exc:
+        raise BackendTimeoutError(
+            f"The backend did not respond within {REQUEST_TIMEOUT} seconds."
+        ) from exc
+    except requests.exceptions.RequestException as exc:
+        raise APIError(f"Unexpected error while contacting the backend: {exc}") from exc
+
+    if response.status_code != 200:
+        raise InvalidResponseError(f"Backend health check failed (HTTP {response.status_code}).")
+
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise InvalidResponseError("Backend health check returned invalid JSON.") from exc

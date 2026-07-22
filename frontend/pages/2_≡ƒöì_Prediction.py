@@ -1,23 +1,25 @@
 """
 GeoSlide - Prediction Page
 ============================
-Phase 10.3 (Part 1): Prediction Page UI.
+Phase 10.4: Prediction Page UI + live backend integration.
 
 This page collects environmental and geological parameters from the
-user via a series of organized expanders, and provides buttons to load
-sample data, reset the form, and (in a future phase) run a prediction.
+user via a series of organized expanders, and lets the user load
+sample data, reset the form, or run a live prediction against the
+GeoSlide FastAPI backend (KNN model).
 
-NOTE: This phase implements ONLY the UI. No prediction logic, no API
-requests, and no SHAP explanations are implemented here.
+SHAP explainability is intentionally not shown here (see the SHAP
+Analysis page) — this page only handles the KNN prediction workflow.
 """
 
 import streamlit as st
 
-from components.sidebar import render_sidebar
 from utils import api
+from utils.constants import RISK_LEVEL_COLORS
 from utils.helpers import (
     LAND_USE_OPTIONS,
     SOIL_TYPE_OPTIONS,
+    build_feature_vector,
     encode_land_use,
     encode_soil_type,
     get_sample_input_data,
@@ -142,24 +144,50 @@ def _reset_form() -> None:
 
 def _predict_landslide_risk() -> None:
     """
-    Gather form inputs, encode categorical fields, and (in a future
-    phase) call the backend prediction API.
+    Gather form inputs, encode categorical fields, build the ordered
+    feature vector the model expects, and call the backend prediction
+    API.
 
-    For Phase 10.3 (Part 1), this only wires up the button so the UI
-    is complete. The actual prediction call is not implemented yet.
+    Any failure (validation, connection, timeout, bad response) is
+    caught and stored in session_state so the UI can show a clear
+    error message instead of crashing.
     """
     payload = _collect_form_payload()
 
     try:
-        result = api.predict(payload)
+        features = build_feature_vector(payload)
+        result = api.predict(features)
         st.session_state["prediction_result"] = {
             "status": "success",
             "data": result,
         }
-    except NotImplementedError:
+    except KeyError as exc:
         st.session_state["prediction_result"] = {
-            "status": "not_implemented",
-            "data": None,
+            "status": "error",
+            "message": f"Could not build the feature vector: {exc}",
+        }
+    except api.BackendUnavailableError as exc:
+        st.session_state["prediction_result"] = {
+            "status": "error",
+            "message": (
+                "⚠️ Can't reach the GeoSlide backend. Make sure the FastAPI "
+                f"server is running (`uvicorn app:app --reload`). Details: {exc}"
+            ),
+        }
+    except api.BackendTimeoutError as exc:
+        st.session_state["prediction_result"] = {
+            "status": "error",
+            "message": f"⏱️ The backend took too long to respond. {exc}",
+        }
+    except api.InvalidResponseError as exc:
+        st.session_state["prediction_result"] = {
+            "status": "error",
+            "message": f"The backend returned an unexpected response: {exc}",
+        }
+    except api.APIError as exc:
+        st.session_state["prediction_result"] = {
+            "status": "error",
+            "message": f"Something went wrong while contacting the backend: {exc}",
         }
 
 
@@ -176,12 +204,6 @@ def _collect_form_payload() -> dict:
 
     return payload
 
-
-# ---------------------------------------------------------------------------
-# Sidebar
-# ---------------------------------------------------------------------------
-
-render_sidebar()
 
 # ---------------------------------------------------------------------------
 # Page Header
@@ -316,7 +338,7 @@ st.divider()
 
 
 # ---------------------------------------------------------------------------
-# Prediction Result Placeholder
+# Prediction Result
 # ---------------------------------------------------------------------------
 
 st.subheader("Prediction Result")
@@ -328,25 +350,48 @@ with result_container:
 
     if result is None:
         st.info("No prediction yet. Fill in the parameters above and click **Predict Landslide Risk**.")
-    elif result["status"] == "not_implemented":
-        st.warning(
-            "Prediction logic is not implemented yet. "
-            "This will be available in a future phase."
-        )
-        placeholder_col1, placeholder_col2, placeholder_col3 = st.columns(3)
-        with placeholder_col1:
-            st.metric("Risk Level", "—")
-        with placeholder_col2:
-            st.metric("Probability", "—")
-        with placeholder_col3:
-            st.metric("Prediction Status", "Pending")
+
+    elif result["status"] == "error":
+        st.error(result["message"])
+
     elif result["status"] == "success":
-        # Reserved for a future phase once api.predict() is implemented.
-        data = result["data"] or {}
-        placeholder_col1, placeholder_col2, placeholder_col3 = st.columns(3)
-        with placeholder_col1:
-            st.metric("Risk Level", data.get("risk_level", "—"))
-        with placeholder_col2:
-            st.metric("Probability", data.get("probability", "—"))
-        with placeholder_col3:
-            st.metric("Prediction Status", data.get("status", "—"))
+        data = result["data"]
+        risk_level = data.get("risk_level", "Unknown")
+        probability = data.get("probability", 0.0)
+        prediction = data.get("prediction", 0)
+        probability_pct = probability * 100
+        color = RISK_LEVEL_COLORS.get(risk_level, "#808080")
+        verdict = "Landslide Likely" if prediction == 1 else "No Landslide Predicted"
+
+        st.markdown(
+            f"""
+            <div style="
+                border-left: 6px solid {color};
+                background-color: rgba(128, 128, 128, 0.08);
+                border-radius: 10px;
+                padding: 1.25rem 1.5rem;
+                margin-bottom: 1rem;
+            ">
+                <div style="font-size: 0.9rem; opacity: 0.75; letter-spacing: 0.03em; text-transform: uppercase;">
+                    Assessment Result
+                </div>
+                <div style="font-size: 1.6rem; font-weight: 700; color: {color}; margin-top: 0.25rem;">
+                    {risk_level} Risk
+                </div>
+                <div style="font-size: 1rem; opacity: 0.85; margin-top: 0.25rem;">
+                    {verdict}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        metric_col1, metric_col2, metric_col3 = st.columns(3)
+        with metric_col1:
+            st.metric("Risk Level", risk_level)
+        with metric_col2:
+            st.metric("Landslide Probability", f"{probability_pct:.1f}%")
+        with metric_col3:
+            st.metric("Predicted Class", "Landslide" if prediction == 1 else "No Landslide")
+
+        st.progress(min(max(probability, 0.0), 1.0))
