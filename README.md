@@ -2,15 +2,16 @@
 
 A Machine Learning-Based Landslide Risk Assessment System that leverages geospatial and historical data to assess and visualize landslide risk.
 
-## Features (planned)
+## Features
 
-- Landslide risk prediction using multiple ML algorithms
-- SHAP-based model explainability
+- Landslide risk prediction served by a trained KNN model
+- SHAP-based model explainability (Random Forest explainer)
 - Historical landslide dashboard
 - Interactive Streamlit frontend
 - FastAPI backend for serving predictions
 - NASA and training dataset integration
-- Google Colab notebooks for experimentation and model development
+- Jupyter notebooks documenting the full ML pipeline (EDA, preprocessing,
+  feature engineering, training, evaluation, SHAP, export)
 
 ## Tech Stack
 
@@ -49,8 +50,8 @@ GeoSlideAI/
 
 ```bash
 # Clone the repository
-git clone <repository_url>
-cd GeoSlideAI
+git clone https://github.com/kritarthakakati02/GeoSlide.git
+cd GeoSlide
 
 # Create a virtual environment
 python -m venv venv
@@ -60,15 +61,32 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Running the App
+
+Two servers need to run side by side:
+
+```bash
+# Terminal 1 - backend (FastAPI)
+cd backend
+uvicorn app:app --reload
+
+# Terminal 2 - frontend (Streamlit)
+cd frontend
+streamlit run app.py
+```
+
+The frontend talks to the backend at `http://127.0.0.1:8000` by default;
+set the `GEOSLIDE_API_URL` environment variable to point it elsewhere.
+
 ## Future Work
 
-- Data collection and preprocessing pipelines
-- Model training and evaluation across multiple ML algorithms
-- SHAP explainability integration
-- FastAPI backend development
-- Streamlit dashboard development
+- Expand SHAP explainability from the notebooks into the live SHAP
+  Analysis page
+- Build out the Historical Map and Dataset Analytics pages
 - Deployment
 
 ## Project Status
 
-🚧 **Initialization Phase** — Project structure has been created. Development has not yet started.
+✅ **Functional** — Backend, frontend, and prediction pipeline are
+integrated end-to-end. SHAP Analysis, Historical Map, Dataset Analytics,
+and Home (multipage) are scaffolded for future work.
