@@ -11,9 +11,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 
+from explain import explain_landslide
 from model_loader import load_models
 from predict import predict_landslide
-from schemas import PredictionRequest, PredictionResponse
+from schemas import ExplanationRequest, ExplanationResponse, PredictionRequest, PredictionResponse
 
 
 @asynccontextmanager
@@ -59,6 +60,24 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
     try:
         result = predict_landslide(request.features)
         return PredictionResponse(**result)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail="Internal server error") from exc
+
+
+@app.post("/explain", response_model=ExplanationResponse)
+async def explain(request: ExplanationRequest) -> ExplanationResponse:
+    """
+    Compute SHAP-based explainability values for a single input feature vector.
+
+    This endpoint uses the existing Random Forest explainer model and returns
+    the feature names, the raw SHAP values, the top positive contributors,
+    the top negative contributors, and an AI-style interpretation.
+    """
+    try:
+        result = explain_landslide(request.features)
+        return ExplanationResponse(**result)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:

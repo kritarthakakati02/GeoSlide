@@ -52,3 +52,37 @@ class PredictionResponse(BaseModel):
         ...,
         description="Human-readable risk level derived from the prediction.",
     )
+
+
+class ExplanationRequest(BaseModel):
+    """Schema representing the input payload for a SHAP explanation request."""
+
+    features: list[float] = Field(
+        ...,
+        min_length=1,
+        description=(
+            "List of numeric feature values used for explainability. "
+            "Values must be provided in the same order used during model training."
+        ),
+    )
+
+
+class ExplanationResponse(BaseModel):
+    """Schema representing the output payload returned for a SHAP explanation."""
+
+    feature_names: list[str] = Field(..., description="Ordered feature names for the input vector.")
+    shap_values: list[float] = Field(..., description="SHAP values for each feature.")
+    feature_importance: list[dict[str, float | str]] = Field(
+        ..., description="Absolute feature importance ranking derived from SHAP values."
+    )
+    top_positive_contributors: list[dict[str, float | str]] = Field(
+        ..., description="Top features that increase the predicted risk."
+    )
+    top_negative_contributors: list[dict[str, float | str]] = Field(
+        ..., description="Top features that decrease the predicted risk."
+    )
+    local_explanation: dict[str, list[dict[str, float | str]]] = Field(
+        ..., description="Structured positive and negative local explanation values."
+    )
+    ai_interpretation: str = Field(..., description="Human-readable interpretation of the explanation.")
+    status: str = Field(..., description="Status of the explanation generation process.")

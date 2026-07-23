@@ -20,7 +20,6 @@ from utils.constants import RISK_LEVEL_COLORS
 from utils.helpers import (
     LAND_USE_OPTIONS,
     SOIL_TYPE_OPTIONS,
-    build_feature_vector,
     encode_land_use,
     encode_soil_type,
     get_sample_input_data,
@@ -156,8 +155,7 @@ def _predict_landslide_risk() -> None:
     payload = _collect_form_payload()
 
     try:
-        features = build_feature_vector(payload)
-        result = api.predict(features)
+        result = api.predict(payload)
         st.session_state["prediction_result"] = {
             "status": "success",
             "data": result,
