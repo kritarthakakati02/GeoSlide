@@ -13,6 +13,7 @@ requests, and no SHAP explanations are implemented here.
 
 import streamlit as st
 
+from components.sidebar import render_sidebar
 from utils import api
 from utils.helpers import (
     LAND_USE_OPTIONS,
@@ -140,25 +141,19 @@ def _reset_form() -> None:
 
 
 def _predict_landslide_risk() -> None:
-    """
-    Gather form inputs, encode categorical fields, and (in a future
-    phase) call the backend prediction API.
-
-    For Phase 10.3 (Part 1), this only wires up the button so the UI
-    is complete. The actual prediction call is not implemented yet.
-    """
+    """Gather form inputs, build the backend payload, and store the prediction result."""
     payload = _collect_form_payload()
+    result = api.predict(payload)
 
-    try:
-        result = api.predict(payload)
+    if result.get("status") == "success":
         st.session_state["prediction_result"] = {
             "status": "success",
-            "data": result,
+            "data": result.get("data", {}),
         }
-    except NotImplementedError:
+    else:
         st.session_state["prediction_result"] = {
-            "status": "not_implemented",
-            "data": None,
+            "status": "error",
+            "data": result.get("data", {}),
         }
 
 
@@ -175,6 +170,12 @@ def _collect_form_payload() -> dict:
 
     return payload
 
+
+# ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
+
+render_sidebar()
 
 # ---------------------------------------------------------------------------
 # Page Header
@@ -312,6 +313,52 @@ st.divider()
 # Prediction Result Placeholder
 # ---------------------------------------------------------------------------
 
+
+def _format_probability(value):
+    """Format probability as a percentage rounded to one decimal place."""
+    if value is None:
+        return "—"
+
+    try:
+        probability = float(value)
+    except (TypeError, ValueError):
+        return "—"
+
+    return f"{probability * 100:.1f}%"
+
+
+def _format_prediction(value):
+    """Translate numeric prediction values into user-friendly labels."""
+    if value is None:
+        return "—"
+
+    text_value = str(value).strip()
+    if text_value in {"0", "0.0", "No Landslide"}:
+        return "No Landslide"
+    if text_value in {"1", "1.0", "Landslide Likely"}:
+        return "Landslide Likely"
+
+    return str(value)
+
+
+def _get_risk_badge(value):
+    """Return a color and label for the risk badge."""
+    if value is None:
+        return None, "—"
+
+    normalized = str(value).strip().lower()
+    if "very" in normalized and "high" in normalized:
+        return "#dc3545", "Very High"
+    if "high" in normalized:
+        return "#fd7e14", "High"
+    if "moderate" in normalized:
+        return "#ffc107", "Moderate"
+    if "low" in normalized:
+        return "#28a745", "Low"
+
+    return "#6c757d", str(value)
+
+
 st.subheader("Prediction Result")
 
 result_container = st.container()
@@ -332,14 +379,38 @@ with result_container:
         with placeholder_col2:
             st.metric("Probability", "—")
         with placeholder_col3:
-            st.metric("Prediction Status", "Pending")
+            st.metric("Prediction", "Pending")
     elif result["status"] == "success":
-        # Reserved for a future phase once api.predict() is implemented.
         data = result["data"] or {}
+        risk_level = data.get("risk_level", "—")
+        probability = data.get("probability")
+        prediction = data.get("prediction", "—")
+        badge_color, badge_text = _get_risk_badge(risk_level)
+
         placeholder_col1, placeholder_col2, placeholder_col3 = st.columns(3)
         with placeholder_col1:
-            st.metric("Risk Level", data.get("risk_level", "—"))
+            st.metric("Risk Level", risk_level if risk_level != "—" else "—")
+            if badge_color and risk_level != "—":
+                st.markdown(
+                    f'<span style="display:inline-block;padding:4px 10px;border-radius:999px;background-color:{badge_color};color:white;font-weight:600;">{badge_text}</span>',
+                    unsafe_allow_html=True,
+                )
         with placeholder_col2:
-            st.metric("Probability", data.get("probability", "—"))
+            st.metric("Probability", _format_probability(probability))
+            if probability is not None:
+                try:
+                    st.progress(float(probability))
+                except (TypeError, ValueError):
+                    st.progress(0.0)
         with placeholder_col3:
-            st.metric("Prediction Status", data.get("status", "—"))
+            st.metric("Prediction", _format_prediction(prediction))
+    else:
+        data = result["data"] or {}
+        st.error(data.get("error", "Prediction could not be completed."))
+        placeholder_col1, placeholder_col2, placeholder_col3 = st.columns(3)
+        with placeholder_col1:
+            st.metric("Risk Level", "—")
+        with placeholder_col2:
+            st.metric("Probability", "—")
+        with placeholder_col3:
+            st.metric("Prediction", "—")
