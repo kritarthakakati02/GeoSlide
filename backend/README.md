@@ -1,45 +1,92 @@
-# GeoSlide Backend
+# GeoSlide AI
 
-FastAPI service that loads the trained GeoSlide model artifacts and
-exposes a `/predict` endpoint used by the Streamlit frontend.
+A Machine Learning-Based Landslide Risk Assessment System that leverages geospatial and historical data to assess and visualize landslide risk.
 
-## Structure
+## Features
 
-- `app.py` — FastAPI application: lifespan model loading, health-check
-  route, and the `/predict` endpoint.
-- `model_loader.py` — Loads the KNN model, RF/SHAP explainer, scaler,
-  feature names, and metadata from `../models/`.
-- `predict.py` — Turns a raw feature list into a prediction, probability,
-  and risk level using the loaded KNN model + scaler.
-- `schemas.py` — Pydantic request/response schemas (`PredictionRequest`,
-  `PredictionResponse`).
-- `requirements.txt` — Python dependencies for the backend.
-- `__init__.py` — Marks this directory as a Python package.
+- Landslide risk prediction served by a trained KNN model
+- SHAP-based model explainability (Random Forest explainer)
+- Historical landslide dashboard
+- Interactive Streamlit frontend
+- FastAPI backend for serving predictions
+- NASA and training dataset integration
+- Jupyter notebooks documenting the full ML pipeline (EDA, preprocessing,
+  feature engineering, training, evaluation, SHAP, export)
 
-## Running
+## Tech Stack
+
+- **Languages:** Python
+- **Machine Learning:** scikit-learn, TensorFlow
+- **Explainability:** SHAP
+- **Backend:** FastAPI
+- **Frontend:** Streamlit
+- **Data Handling:** pandas, numpy
+- **Visualization:** matplotlib, plotly
+- **Notebooks:** Jupyter, Google Colab
+
+## Project Structure
+
+```
+GeoSlideAI/
+│
+├── datasets/
+│   ├── nasa/
+│   └── training/
+│
+├── notebooks/
+├── backend/
+├── frontend/
+├── models/
+├── utils/
+├── reports/
+│
+├── .gitignore
+├── README.md
+├── requirements.txt
+└── LICENSE
+```
+
+## Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/kritarthakakati02/GeoSlide.git
+cd GeoSlide
+
+# Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
+```
+
+## Running the App
+
+Two servers need to run side by side:
+
+```bash
+# Terminal 1 - backend (FastAPI)
+cd backend
 uvicorn app:app --reload
+
+# Terminal 2 - frontend (Streamlit)
+cd frontend
+streamlit run Home.py
 ```
 
-Then visit `http://127.0.0.1:8000/` to see the health-check message, or
-`http://127.0.0.1:8000/docs` for interactive API docs.
+The frontend talks to the backend at `http://127.0.0.1:8000` by default;
+set the `GEOSLIDE_API_URL` environment variable to point it elsewhere.
 
-### `POST /predict`
+## Future Work
 
-Request body:
+- Expand SHAP explainability from the notebooks into the live SHAP
+  Analysis page
+- Build out the Historical Map and Dataset Analytics pages
+- Deployment
 
-```json
-{ "features": [45.0, 32.0, 68.0, "... 34 values total, in the exact order of models/feature_names.pkl"] }
-```
+## Project Status
 
-Response body:
-
-```json
-{ "prediction": 1, "probability": 0.87, "risk_level": "Very High" }
-```
-
-The Streamlit frontend (`frontend/utils/api.py`) points at this service
-via the `GEOSLIDE_API_URL` environment variable, defaulting to
-`http://127.0.0.1:8000`.
+✅ **Functional** — Backend, frontend, and prediction pipeline are
+integrated end-to-end. SHAP Analysis, Historical Map, Dataset Analytics,
+and Home (multipage) are scaffolded for future work.

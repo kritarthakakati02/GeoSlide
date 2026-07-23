@@ -8,7 +8,7 @@ from pathlib import Path
 import streamlit as st
 
 NAV_ITEMS = [
-    {"key": "dashboard", "title": "Dashboard", "icon": "🏠", "page": "app.py"},
+    {"key": "dashboard", "title": "Dashboard", "icon": "🏠", "page": "Home.py"},
     {"key": "prediction", "title": "Prediction", "icon": "🔍", "page": "pages/1_🔍_Prediction.py"},
     {"key": "shap", "title": "SHAP Analysis", "icon": "🧠", "page": "pages/2_SHAP_Analysis.py"},
     {"key": "map", "title": "Historical Map", "icon": "🌍", "page": "pages/3_Historical_Map.py"},
@@ -24,7 +24,7 @@ def _detect_active_page() -> str:
         caller = frame.f_back if frame else None
         while caller:
             filename = Path(caller.f_code.co_filename).name
-            if filename == "app.py":
+            if filename == "Home.py":
                 return "dashboard"
             if filename.startswith("1_"):
                 return "prediction"

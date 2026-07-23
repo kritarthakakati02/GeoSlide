@@ -47,6 +47,8 @@ DATASET_SOURCE = "GeoSlide processed training data (local project dataset)"
 # Common candidate locations for the real training dataset. The first
 # match found will be used.
 CANDIDATE_DATASET_PATHS = [
+    "datasets/wsn_landslide_data.csv",
+    "../datasets/wsn_landslide_data.csv",
     "data/processed/landslide_dataset.csv",
     "data/landslide_dataset.csv",
     "data/train.csv",

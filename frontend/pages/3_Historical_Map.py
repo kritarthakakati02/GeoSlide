@@ -14,6 +14,7 @@ sample data so the UI remains fully functional and demoable.
 """
 
 from datetime import date, timedelta
+import glob
 import random
 
 import pandas as pd
@@ -42,6 +43,14 @@ st.set_page_config(
 NASA_CATALOG_URL = (
     "https://data.nasa.gov/resource/dd9e-wu2v.csv"  # NASA Global Landslide Catalog
 )
+
+# The project's own local export of the same NASA Global Landslide
+# Catalog. Preferred over the live NASA endpoint since it's already
+# present in the repo and doesn't depend on network access.
+LOCAL_CATALOG_PATHS = [
+    "datasets/Global_Landslide_Catalog_Export_20250201.csv",
+    "../datasets/Global_Landslide_Catalog_Export_20250201.csv",
+]
 
 TRIGGER_OPTIONS = ["Rainfall", "Earthquake", "Snowmelt", "Construction", "Other"]
 COUNTRY_OPTIONS = [
@@ -101,46 +110,82 @@ def _generate_placeholder_data(n: int = 120) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
+def _map_catalog_columns(raw: pd.DataFrame) -> pd.DataFrame:
+    """
+    Map a raw Global Landslide Catalog dataframe (whether loaded from
+    the local project export or fetched live from NASA - both share
+    the same column schema) into this page's normalized schema.
+
+    This is the same column-mapping logic previously inlined in
+    load_landslide_data(); it is unchanged, just shared so both the
+    local file and the live NASA fetch use one code path.
+    """
+    df = pd.DataFrame()
+    df["date"] = pd.to_datetime(
+        raw.get("event_date", raw.get("event_date_std")), errors="coerce"
+    )
+    df["country"] = raw.get("country_name", raw.get("country"))
+    df["trigger"] = raw.get("landslide_trigger", raw.get("trigger"))
+    df["fatalities"] = pd.to_numeric(
+        raw.get("fatality_count", raw.get("fatalities")), errors="coerce"
+    ).fillna(0)
+    df["latitude"] = pd.to_numeric(
+        raw.get("latitude"), errors="coerce"
+    )
+    df["longitude"] = pd.to_numeric(
+        raw.get("longitude"), errors="coerce"
+    )
+
+    df = df.dropna(subset=["date", "latitude", "longitude"])
+    if df.empty:
+        raise ValueError("Catalog dataset returned no usable rows.")
+
+    df["year"] = df["date"].dt.year
+    df["date"] = df["date"].dt.date
+    df["id"] = range(1, len(df) + 1)
+    df["fatalities"] = df["fatalities"].astype(int)
+
+    return df.reset_index(drop=True)
+
+
+def _load_local_catalog() -> pd.DataFrame | None:
+    """
+    Attempt to load the project's local Global Landslide Catalog
+    export. Returns None (never raises) if it can't be found or
+    parsed, so callers can gracefully fall back to the existing
+    NASA/placeholder behavior.
+    """
+    for path in LOCAL_CATALOG_PATHS:
+        for match in glob.glob(path):
+            try:
+                raw = pd.read_csv(match)
+                return _map_catalog_columns(raw)
+            except Exception:
+                continue
+    return None
+
+
 @st.cache_data(show_spinner=False)
 def load_landslide_data() -> tuple[pd.DataFrame, bool]:
     """
-    Attempt to load the NASA Global Landslide Catalog. Falls back to
-    generated placeholder data if the dataset can't be reached or
-    parsed.
+    Attempt to load landslide event data, in order of preference:
+      1. The project's local Global Landslide Catalog export.
+      2. The live NASA Global Landslide Catalog endpoint.
+      3. Generated placeholder data, as a last resort, so the page
+         remains fully functional and demoable regardless.
 
     Returns:
         A tuple of (dataframe, is_live_data) where is_live_data is
-        True only if real NASA data was successfully loaded.
+        True only if real catalog data (local or NASA) was
+        successfully loaded.
     """
+    local_df = _load_local_catalog()
+    if local_df is not None:
+        return local_df, True
+
     try:
         raw = pd.read_csv(NASA_CATALOG_URL, nrows=500, timeout=5)
-
-        df = pd.DataFrame()
-        df["date"] = pd.to_datetime(
-            raw.get("event_date", raw.get("event_date_std")), errors="coerce"
-        )
-        df["country"] = raw.get("country_name", raw.get("country"))
-        df["trigger"] = raw.get("landslide_trigger", raw.get("trigger"))
-        df["fatalities"] = pd.to_numeric(
-            raw.get("fatality_count", raw.get("fatalities")), errors="coerce"
-        ).fillna(0)
-        df["latitude"] = pd.to_numeric(
-            raw.get("latitude"), errors="coerce"
-        )
-        df["longitude"] = pd.to_numeric(
-            raw.get("longitude"), errors="coerce"
-        )
-
-        df = df.dropna(subset=["date", "latitude", "longitude"])
-        if df.empty:
-            raise ValueError("NASA dataset returned no usable rows.")
-
-        df["year"] = df["date"].dt.year
-        df["date"] = df["date"].dt.date
-        df["id"] = range(1, len(df) + 1)
-        df["fatalities"] = df["fatalities"].astype(int)
-
-        return df.reset_index(drop=True), True
+        return _map_catalog_columns(raw), True
 
     except Exception:
         return _generate_placeholder_data(), False
