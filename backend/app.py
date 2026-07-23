@@ -14,7 +14,7 @@ from fastapi import FastAPI, HTTPException
 from explain import explain_landslide
 from model_loader import load_models
 from predict import predict_landslide
-from schemas import ExplanationRequest, ExplanationResponse, PredictionRequest, PredictionResponse
+from schemas import ExplainResponse, PredictionRequest, PredictionResponse
 
 
 @asynccontextmanager
@@ -66,18 +66,27 @@ async def predict(request: PredictionRequest) -> PredictionResponse:
         raise HTTPException(status_code=500, detail="Internal server error") from exc
 
 
-@app.post("/explain", response_model=ExplanationResponse)
-async def explain(request: ExplanationRequest) -> ExplanationResponse:
+@app.post("/explain", response_model=ExplainResponse)
+async def explain(request: PredictionRequest) -> ExplainResponse:
     """
-    Compute SHAP-based explainability values for a single input feature vector.
+    Generate a real SHAP-based explanation for a set of input features.
 
-    This endpoint uses the existing Random Forest explainer model and returns
-    the feature names, the raw SHAP values, the top positive contributors,
-    the top negative contributors, and an AI-style interpretation.
+    Accepts the same ordered feature vector shape as /predict, runs
+    shap.TreeExplainer against the Random Forest explainability model
+    (models/rf_explainer.joblib) via explain_landslide, and returns an
+    ExplainResponse with SHAP values, global feature importance, and
+    the top positive/negative local contributors.
+
+    Note: this endpoint does not use or affect the KNN prediction
+    model - it exists purely to explain predictions after the fact.
+
+    Raises:
+        HTTPException(400): If the provided features are invalid.
+        HTTPException(500): If an unexpected error occurs during explanation.
     """
     try:
         result = explain_landslide(request.features)
-        return ExplanationResponse(**result)
+        return ExplainResponse(**result)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:

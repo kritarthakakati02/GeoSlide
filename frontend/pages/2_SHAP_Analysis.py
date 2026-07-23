@@ -11,6 +11,7 @@ import streamlit as st
 
 from components.sidebar import render_sidebar
 from utils import api
+from utils.helpers import FORM_FIELD_TO_FEATURE_NAME, encode_land_use, encode_soil_type
 
 
 # ---------------------------------------------------------------------------
@@ -31,15 +32,45 @@ st.set_page_config(
 st.session_state.setdefault("shap_explanation", None)
 
 
+def _get_current_feature_payload() -> dict:
+    """
+    Rebuild the raw feature payload for the parameters currently set on
+    the Prediction page's form. Streamlit's session_state is shared across
+    pages, and the Prediction page's widgets are bound to these same keys
+    (see FORM_FIELD_TO_FEATURE_NAME / "land_use" / "soil_type"), so this
+    lets the SHAP page explain the real inputs behind the most recent
+    prediction without needing to read or modify the Prediction page.
+    """
+    payload = {key: st.session_state.get(key, 0.0) for key in FORM_FIELD_TO_FEATURE_NAME}
+    payload.update(encode_land_use(st.session_state.get("land_use", "")))
+    payload.update(encode_soil_type(st.session_state.get("soil_type", "")))
+    return payload
+
+
 def _load_latest_prediction() -> None:
-    """Load SHAP explainability data for the most recent prediction."""
+    """Load a real SHAP explainability breakdown for the most recent prediction."""
     prediction_result = st.session_state.get("prediction_result")
-    prediction_data = None
-    if prediction_result and prediction_result.get("status") == "success":
-        prediction_data = prediction_result.get("data")
+
+    if not prediction_result or prediction_result.get("status") != "success":
+        st.session_state["shap_explanation"] = {
+            "feature_importance": [],
+            "local_explanation": {"positive": [], "negative": []},
+            "ai_interpretation": (
+                "No prediction found yet. Run a prediction on the Prediction "
+                "page first, then come back and load it here."
+            ),
+            "status": "error",
+            "feature_names": [],
+            "shap_values": [],
+            "top_positive_contributors": [],
+            "top_negative_contributors": [],
+        }
+        return
+
+    payload = _get_current_feature_payload()
 
     try:
-        explanation = api.get_shap_explanation(prediction_data)
+        explanation = api.get_shap_explanation(payload)
     except Exception as exc:
         explanation = {
             "feature_importance": [],
@@ -86,8 +117,9 @@ if explanation is None:
     )
     if st.session_state.get("prediction_result") is None:
         st.caption(
-            "Tip: No prediction was found in this session, so placeholder "
-            "data will be used instead."
+            "Tip: No prediction has been run yet in this session. Run one "
+            "on the Prediction page first for the most meaningful "
+            "explanation."
         )
 
 

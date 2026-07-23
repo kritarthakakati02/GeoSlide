@@ -54,35 +54,46 @@ class PredictionResponse(BaseModel):
     )
 
 
-class ExplanationRequest(BaseModel):
-    """Schema representing the input payload for a SHAP explanation request."""
+class FeatureImportanceItem(BaseModel):
+    """A single feature's global importance score (mean |SHAP value| across a cached sample of the training data)."""
 
-    features: list[float] = Field(
-        ...,
-        min_length=1,
-        description=(
-            "List of numeric feature values used for explainability. "
-            "Values must be provided in the same order used during model training."
-        ),
-    )
+    feature: str = Field(..., description="Feature name.")
+    importance: float = Field(..., description="Global importance score for this feature.")
 
 
-class ExplanationResponse(BaseModel):
-    """Schema representing the output payload returned for a SHAP explanation."""
+class ContributorItem(BaseModel):
+    """A single feature's local SHAP contribution to one specific prediction."""
 
-    feature_names: list[str] = Field(..., description="Ordered feature names for the input vector.")
-    shap_values: list[float] = Field(..., description="SHAP values for each feature.")
-    feature_importance: list[dict[str, float | str]] = Field(
-        ..., description="Absolute feature importance ranking derived from SHAP values."
+    feature: str = Field(..., description="Feature name.")
+    impact: float = Field(..., description="Signed SHAP value: positive increases risk, negative decreases it.")
+
+
+class LocalExplanation(BaseModel):
+    """Top features pushing a single prediction higher (positive) or lower (negative)."""
+
+    positive: list[ContributorItem] = Field(default_factory=list)
+    negative: list[ContributorItem] = Field(default_factory=list)
+
+
+class ExplainResponse(BaseModel):
+    """
+    Schema representing the output payload returned by the SHAP
+    explainability endpoint for a single input feature vector.
+    """
+
+    status: str = Field(..., description="'success' if the explanation was computed successfully.")
+    feature_names: list[str] = Field(..., description="Feature names, in model order.")
+    shap_values: list[float] = Field(
+        ..., description="Signed SHAP value per feature for this specific instance (positive class)."
     )
-    top_positive_contributors: list[dict[str, float | str]] = Field(
-        ..., description="Top features that increase the predicted risk."
+    feature_importance: list[FeatureImportanceItem] = Field(
+        ..., description="Cached global SHAP feature importance ranking, computed once from a training data sample."
     )
-    top_negative_contributors: list[dict[str, float | str]] = Field(
-        ..., description="Top features that decrease the predicted risk."
+    local_explanation: LocalExplanation = Field(
+        ..., description="Top positive/negative contributors for this specific prediction."
     )
-    local_explanation: dict[str, list[dict[str, float | str]]] = Field(
-        ..., description="Structured positive and negative local explanation values."
+    top_positive_contributors: list[ContributorItem] = Field(default_factory=list)
+    top_negative_contributors: list[ContributorItem] = Field(default_factory=list)
+    ai_interpretation: str = Field(
+        ..., description="Natural-language summary of the top drivers behind this prediction."
     )
-    ai_interpretation: str = Field(..., description="Human-readable interpretation of the explanation.")
-    status: str = Field(..., description="Status of the explanation generation process.")
