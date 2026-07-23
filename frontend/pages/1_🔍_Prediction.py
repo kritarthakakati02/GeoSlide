@@ -144,9 +144,6 @@ def _reset_form() -> None:
 
 
 def _predict_landslide_risk() -> None:
-<<<<<<<< HEAD:frontend/pages/1_🔍_Prediction.py
-    """Gather form inputs, build the backend payload, and store the prediction result."""
-========
     """
     Gather form inputs, encode categorical fields, build the ordered
     feature vector the model expects, and call the backend prediction
@@ -156,27 +153,15 @@ def _predict_landslide_risk() -> None:
     caught and stored in session_state so the UI can show a clear
     error message instead of crashing.
     """
->>>>>>>> 9274063391122d774fc7099c2286f5496e15e6ba:frontend/pages/2_≡ƒöì_Prediction.py
     payload = _collect_form_payload()
-    result = api.predict(payload)
 
-<<<<<<<< HEAD:frontend/pages/1_🔍_Prediction.py
-    if result.get("status") == "success":
-========
     try:
         features = build_feature_vector(payload)
         result = api.predict(features)
->>>>>>>> 9274063391122d774fc7099c2286f5496e15e6ba:frontend/pages/2_≡ƒöì_Prediction.py
         st.session_state["prediction_result"] = {
             "status": "success",
-            "data": result.get("data", {}),
+            "data": result,
         }
-<<<<<<<< HEAD:frontend/pages/1_🔍_Prediction.py
-    else:
-        st.session_state["prediction_result"] = {
-            "status": "error",
-            "data": result.get("data", {}),
-========
     except KeyError as exc:
         st.session_state["prediction_result"] = {
             "status": "error",
@@ -204,7 +189,6 @@ def _predict_landslide_risk() -> None:
         st.session_state["prediction_result"] = {
             "status": "error",
             "message": f"Something went wrong while contacting the backend: {exc}",
->>>>>>>> 9274063391122d774fc7099c2286f5496e15e6ba:frontend/pages/2_≡ƒöì_Prediction.py
         }
 
 
@@ -419,66 +403,16 @@ with result_container:
 
     if result is None:
         st.info("No prediction yet. Fill in the parameters above and click **Predict Landslide Risk**.")
-<<<<<<<< HEAD:frontend/pages/1_🔍_Prediction.py
-    elif result["status"] == "not_implemented":
-        st.warning(
-            "Prediction logic is not implemented yet. "
-            "This will be available in a future phase."
-        )
-        placeholder_col1, placeholder_col2, placeholder_col3 = st.columns(3)
-        with placeholder_col1:
-            st.metric("Risk Level", "—")
-        with placeholder_col2:
-            st.metric("Probability", "—")
-        with placeholder_col3:
-            st.metric("Prediction", "Pending")
-    elif result["status"] == "success":
-        data = result["data"] or {}
-        risk_level = data.get("risk_level", "—")
-        probability = data.get("probability")
-        prediction = data.get("prediction", "—")
-        badge_color, badge_text = _get_risk_badge(risk_level)
-
-        placeholder_col1, placeholder_col2, placeholder_col3 = st.columns(3)
-        with placeholder_col1:
-            st.metric("Risk Level", risk_level if risk_level != "—" else "—")
-            if badge_color and risk_level != "—":
-                st.markdown(
-                    f'<span style="display:inline-block;padding:4px 10px;border-radius:999px;background-color:{badge_color};color:white;font-weight:600;">{badge_text}</span>',
-                    unsafe_allow_html=True,
-                )
-        with placeholder_col2:
-            st.metric("Probability", _format_probability(probability))
-            if probability is not None:
-                try:
-                    st.progress(float(probability))
-                except (TypeError, ValueError):
-                    st.progress(0.0)
-        with placeholder_col3:
-            st.metric("Prediction", _format_prediction(prediction))
-    else:
-        data = result["data"] or {}
-        st.error(data.get("error", "Prediction could not be completed."))
-        placeholder_col1, placeholder_col2, placeholder_col3 = st.columns(3)
-        with placeholder_col1:
-            st.metric("Risk Level", "—")
-        with placeholder_col2:
-            st.metric("Probability", "—")
-        with placeholder_col3:
-            st.metric("Prediction", "—")
-========
-
     elif result["status"] == "error":
-        st.error(result["message"])
-
+        st.error(result.get("message", "Prediction could not be completed."))
     elif result["status"] == "success":
-        data = result["data"]
+        data = result.get("data") or {}
         risk_level = data.get("risk_level", "Unknown")
         probability = data.get("probability", 0.0)
         prediction = data.get("prediction", 0)
-        probability_pct = probability * 100
+        badge_color, badge_text = _get_risk_badge(risk_level)
         color = RISK_LEVEL_COLORS.get(risk_level, "#808080")
-        verdict = "Landslide Likely" if prediction == 1 else "No Landslide Predicted"
+        verdict = _format_prediction(prediction)
 
         st.markdown(
             f"""
@@ -506,10 +440,18 @@ with result_container:
         metric_col1, metric_col2, metric_col3 = st.columns(3)
         with metric_col1:
             st.metric("Risk Level", risk_level)
+            if badge_color and risk_level != "—":
+                st.markdown(
+                    f'<span style="display:inline-block;padding:4px 10px;border-radius:999px;background-color:{badge_color};color:white;font-weight:600;">{badge_text}</span>',
+                    unsafe_allow_html=True,
+                )
         with metric_col2:
-            st.metric("Landslide Probability", f"{probability_pct:.1f}%")
+            st.metric("Probability", _format_probability(probability))
         with metric_col3:
-            st.metric("Predicted Class", "Landslide" if prediction == 1 else "No Landslide")
+            st.metric("Prediction", verdict)
 
-        st.progress(min(max(probability, 0.0), 1.0))
->>>>>>>> 9274063391122d774fc7099c2286f5496e15e6ba:frontend/pages/2_≡ƒöì_Prediction.py
+        if probability is not None:
+            try:
+                st.progress(float(probability))
+            except (TypeError, ValueError):
+                st.progress(0.0)

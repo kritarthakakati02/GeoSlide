@@ -1,17 +1,9 @@
 """
 GeoSlide - SHAP Analysis Page
 ================================
-Phase 10.4: SHAP Explainability Page.
 
 This page presents SHAP-based explainability for the most recent
-landslide risk prediction: global feature importance, a reserved
-summary-plot area, a local (per-prediction) explanation of the top
-positive/negative contributing features, and an AI-generated
-natural-language interpretation.
-
-NOTE: The backend does not yet expose a SHAP endpoint. This page uses
-`api.get_shap_explanation()`, which currently returns placeholder
-data. No real SHAP computation happens here.
+landslide risk prediction using the backend `/explain` endpoint.
 """
 
 import pandas as pd
@@ -40,21 +32,27 @@ st.session_state.setdefault("shap_explanation", None)
 
 
 def _load_latest_prediction() -> None:
-    """
-    Load SHAP explainability data for the most recent prediction.
-
-    Pulls the latest prediction result from session state if the
-    Prediction page has populated one; otherwise falls back to
-    placeholder data. Either way, `api.get_shap_explanation()` itself
-    currently only returns placeholder/mock data since no backend
-    SHAP endpoint exists yet.
-    """
+    """Load SHAP explainability data for the most recent prediction."""
     prediction_result = st.session_state.get("prediction_result")
     prediction_data = None
     if prediction_result and prediction_result.get("status") == "success":
         prediction_data = prediction_result.get("data")
 
-    st.session_state["shap_explanation"] = api.get_shap_explanation(prediction_data)
+    try:
+        explanation = api.get_shap_explanation(prediction_data)
+    except Exception as exc:
+        explanation = {
+            "feature_importance": [],
+            "local_explanation": {"positive": [], "negative": []},
+            "ai_interpretation": f"Unable to load explanation: {exc}",
+            "status": "error",
+            "feature_names": [],
+            "shap_values": [],
+            "top_positive_contributors": [],
+            "top_negative_contributors": [],
+        }
+
+    st.session_state["shap_explanation"] = explanation
 
 
 # ---------------------------------------------------------------------------
@@ -126,11 +124,14 @@ st.subheader("🐝 SHAP Summary Plot")
 st.caption("Distribution of SHAP values across features (beeswarm-style summary).")
 
 with st.container(border=True):
-    st.write(
-        "_Reserved space for the SHAP summary plot. This visualization will "
-        "be implemented in a future phase once SHAP values are available "
-        "from the backend._"
-    )
+    if explanation is None or not explanation.get("feature_names"):
+        st.write("_No SHAP values are available yet._")
+    else:
+        feature_names = explanation.get("feature_names", [])
+        shap_values = explanation.get("shap_values", [])
+        summary_df = pd.DataFrame({"feature": feature_names, "shap_value": shap_values})
+        summary_df = summary_df.sort_values("shap_value", key=lambda s: s.abs(), ascending=False)
+        st.bar_chart(summary_df.set_index("feature")["shap_value"], use_container_width=True)
 
 st.divider()
 
@@ -151,7 +152,7 @@ negative_features = local.get("negative", [])
 with col_pos:
     st.markdown("**⬆️ Top Positive Contributors** _(increase risk)_")
     if explanation is None or not positive_features:
-        st.write("_No data loaded yet._")
+        st.write("_No positive contributors available._")
     else:
         for item in positive_features:
             st.metric(item["feature"], f'+{item["impact"]:.2f}')
@@ -159,7 +160,7 @@ with col_pos:
 with col_neg:
     st.markdown("**⬇️ Top Negative Contributors** _(decrease risk)_")
     if explanation is None or not negative_features:
-        st.write("_No data loaded yet._")
+        st.write("_No negative contributors available._")
     else:
         for item in negative_features:
             st.metric(item["feature"], f'{item["impact"]:.2f}')
@@ -179,5 +180,5 @@ with st.container(border=True):
         st.write("_AI-generated interpretation will appear here once data is loaded._")
     else:
         st.markdown(explanation.get("ai_interpretation", "_No interpretation available._"))
-        if explanation.get("status") == "placeholder":
-            st.caption("⚠️ This is placeholder data — not a real model explanation yet.")
+        if explanation.get("status") == "error":
+            st.caption("⚠️ The explanation endpoint could not be reached or returned an error.")
