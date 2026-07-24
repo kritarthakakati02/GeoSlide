@@ -1,92 +1,166 @@
-# GeoSlide AI
+# 🌍 GeoSlide AI
 
-A Machine Learning-Based Landslide Risk Assessment System that leverages geospatial and historical data to assess and visualize landslide risk.
+**GeoSlide AI** is a Machine Learning-Based Landslide Risk Assessment System that predicts landslide risk using environmental and geological parameters while providing transparent model explanations through Explainable AI (SHAP) and interactive geospatial visualization.
+
+The project combines machine learning, data visualization, and modern web technologies to create an easy-to-use platform for landslide risk analysis.
+
+---
 
 ## Features
 
-- Landslide risk prediction served by a trained KNN model
-- SHAP-based model explainability (Random Forest explainer)
-- Historical landslide dashboard
-- Interactive Streamlit frontend
-- FastAPI backend for serving predictions
-- NASA and training dataset integration
-- Jupyter notebooks documenting the full ML pipeline (EDA, preprocessing,
-  feature engineering, training, evaluation, SHAP, export)
+- Predict landslide risk using a trained K-Nearest Neighbors (KNN) model
+- Explain predictions using SHAP with a Random Forest surrogate model
+- Explore historical landslide events through an interactive map
+- Analyze the training dataset with interactive visualizations
+- Modern multi-page Streamlit dashboard
+- FastAPI backend serving machine learning predictions
+- Modular project structure for easy maintenance and extension
 
-## Tech Stack
+---
 
-- **Languages:** Python
-- **Machine Learning:** scikit-learn, TensorFlow
-- **Explainability:** SHAP
-- **Backend:** FastAPI
-- **Frontend:** Streamlit
-- **Data Handling:** pandas, numpy
-- **Visualization:** matplotlib, plotly
-- **Notebooks:** Jupyter, Google Colab
+## Technology Stack
+
+### Programming Language
+- Python
+
+### Frontend
+- Streamlit
+
+### Backend
+- FastAPI
+
+### Machine Learning
+- Scikit-learn
+- SHAP
+
+### Data Processing
+- Pandas
+- NumPy
+
+### Visualization
+- Plotly
+- Matplotlib
+- Folium
+
+### Development Tools
+- Jupyter Notebook
+- Joblib
+
+---
 
 ## Project Structure
 
-```
-GeoSlideAI/
+```text
+GeoSlide/
 │
-├── datasets/
-│   ├── nasa/
-│   └── training/
+├── backend/          # FastAPI backend
+├── frontend/         # Streamlit dashboard
+├── datasets/         # Training and historical datasets
+├── models/           # Trained machine learning models
+├── notebooks/        # Data analysis and model development
 │
-├── notebooks/
-├── backend/
-├── frontend/
-├── models/
-├── utils/
-├── reports/
-│
-├── .gitignore
-├── README.md
 ├── requirements.txt
+├── README.md
 └── LICENSE
 ```
 
+---
+
+## How It Works
+
+1. Environmental and geological parameters are provided through the Streamlit interface.
+2. The FastAPI backend processes the request.
+3. The trained KNN model predicts the landslide risk.
+4. A Random Forest surrogate model generates SHAP explanations.
+5. Results are displayed with prediction confidence, feature importance, and interactive visualizations.
+
+---
+
+## Machine Learning Models
+
+| Component | Model |
+|----------|-------|
+| Risk Prediction | K-Nearest Neighbors (KNN) |
+| Explainability | Random Forest + SHAP |
+
+---
+
 ## Installation
 
+Clone the repository:
+
 ```bash
-# Clone the repository
 git clone https://github.com/kritarthakakati02/GeoSlide.git
+
 cd GeoSlide
+```
 
-# Create a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+Install the required packages:
 
-# Install dependencies
+```bash
 pip install -r requirements.txt
 ```
 
-## Running the App
+---
 
-Two servers need to run side by side:
+## Running the Project
+
+### Start the backend
 
 ```bash
-# Terminal 1 - backend (FastAPI)
 cd backend
-uvicorn app:app --reload
 
-# Terminal 2 - frontend (Streamlit)
-cd frontend
-streamlit run app.py
+uvicorn app:app --reload
 ```
 
-The frontend talks to the backend at `http://127.0.0.1:8000` by default;
-set the `GEOSLIDE_API_URL` environment variable to point it elsewhere.
+### Start the frontend
 
-## Future Work
+```bash
+cd frontend
 
-- Expand SHAP explainability from the notebooks into the live SHAP
-  Analysis page
-- Build out the Historical Map and Dataset Analytics pages
-- Deployment
+streamlit run Home.py
+```
 
-## Project Status
+The frontend communicates with the FastAPI backend running locally.
 
-✅ **Functional** — Backend, frontend, and prediction pipeline are
-integrated end-to-end. SHAP Analysis, Historical Map, Dataset Analytics,
-and Home (multipage) are scaffolded for future work.
+---
+
+## Project Modules
+
+- Dashboard
+- Landslide Risk Prediction
+- SHAP Explainable AI
+- Historical Landslide Explorer
+- Dataset Analytics
+- About
+
+---
+
+## Future Improvements
+
+Potential enhancements include:
+
+- Real-time weather API integration
+- Satellite imagery analysis
+- Deep learning models
+- Cloud deployment
+- Docker support
+- Mobile-friendly interface
+
+---
+
+## License
+
+This project is licensed under the MIT License.
+
+---
+
+## Developer
+
+**Kritartha Kakati**
+
+B.Tech Computer Science & Engineering
+
+Sikkim Manipal Institute of Technology
+
+Machine Learning | Data Science | Software Development
