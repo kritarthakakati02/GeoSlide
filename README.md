@@ -1,4 +1,4 @@
-# 🌍 GeoSlide AI
+# 🌍 GeoSlide 
 
 **GeoSlide AI** is a Machine Learning-Based Landslide Risk Assessment System that predicts landslide risk using environmental and geological parameters while providing transparent model explanations through Explainable AI (SHAP) and interactive geospatial visualization.
 
@@ -133,19 +133,6 @@ The frontend communicates with the FastAPI backend running locally.
 - Historical Landslide Explorer
 - Dataset Analytics
 - About
-
----
-
-## Future Improvements
-
-Potential enhancements include:
-
-- Real-time weather API integration
-- Satellite imagery analysis
-- Deep learning models
-- Cloud deployment
-- Docker support
-- Mobile-friendly interface
 
 ---
 
