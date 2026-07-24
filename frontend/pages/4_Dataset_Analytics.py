@@ -12,6 +12,28 @@ NOTE: If the real training dataset cannot be located/loaded, this page
 automatically falls back to a generated placeholder dataset (same
 schema/shape) so every chart renders correctly and the page remains
 fully demoable.
+
+UI note: this file was redesigned into a professional "data
+intelligence dashboard" (page-scoped dark theme, hover KPI cards, one
+premium card per chart, a larger standalone correlation-heatmap card,
+a modern dataset-preview card, a compact dataset-info card, and an
+insights card). This mirrors the same redesign approach already used
+on the Prediction, SHAP Analysis, and Historical Map pages for visual
+consistency across the app.
+
+Nothing about *what* is computed changed:
+    - Dataset loading (`load_dataset`, `_generate_placeholder_dataset`,
+      `_find_column`) is byte-for-byte unchanged.
+    - Every Plotly figure (target pie chart, rainfall/slope/soil-
+      moisture histograms, correlation heatmap) uses the exact same
+      px.* calls, same columns, same color sequences, and same
+      update_layout() calls as before.
+    - All statistics (total_records, total_features, landslide_events,
+      non_landslide_events, missing_values_total/pct, corr_matrix) are
+      computed with the exact same pandas/numpy operations as before.
+    - The dataset preview still shows `dataset_df.head(100)`.
+
+Only layout, typography, spacing, and presentation were touched.
 """
 
 import glob
@@ -37,7 +59,7 @@ st.set_page_config(
 
 
 # ---------------------------------------------------------------------------
-# Dataset Loading
+# Dataset Loading (UNCHANGED)
 # ---------------------------------------------------------------------------
 
 TARGET_COLUMN = "landslide"
@@ -194,12 +216,220 @@ soil_moisture_col = _find_column(["soil_moisture", "moisture"])
 
 render_sidebar()
 
+
 # ---------------------------------------------------------------------------
-# Page Header
+# Page-scoped dark theme + layout CSS
+# ---------------------------------------------------------------------------
+# Same scoping approach and design tokens (--gs-*) as the Prediction, SHAP
+# Analysis, and Historical Map pages: everything lives under
+# [data-testid="stAppViewContainer"] and is only ever injected while this
+# script is the active page, so it cannot leak into other pages.
+
+ANALYTICS_CSS = """
+:root {
+    --gs-bg: #0F172A;
+    --gs-card: #1E293B;
+    --gs-primary: #10B981;
+    --gs-accent: #3B82F6;
+    --gs-danger: #EF4444;
+    --gs-text: #E2E8F0;
+    --gs-muted: #94A3B8;
+    --gs-border: rgba(148, 163, 184, 0.14);
+    --gs-radius: 18px;
+}
+
+[data-testid="stAppViewContainer"] {
+    background: radial-gradient(circle at 85% 0%, #132239 0%, var(--gs-bg) 45%) !important;
+}
+
+[data-testid="stAppViewContainer"] .block-container {
+    padding: 1.6rem 2.6rem 2rem !important;
+    max-width: 1500px;
+}
+
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3,
+[data-testid="stAppViewContainer"] h4 {
+    color: #F1F5F9 !important;
+    letter-spacing: -0.01em;
+}
+
+[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] {
+    color: var(--gs-muted) !important;
+}
+
+[data-testid="stAppViewContainer"] hr {
+    border-color: var(--gs-border) !important;
+}
+
+/* Cards (bordered containers: KPI cards, chart cards, heatmap card, preview card, info card, insight card) */
+[data-testid="stAppViewContainer"] [data-testid="stVerticalBlockBorderWrapper"] {
+    background: var(--gs-card) !important;
+    border: 1px solid var(--gs-border) !important;
+    border-radius: var(--gs-radius) !important;
+    box-shadow: 0 12px 28px rgba(2, 6, 23, 0.45) !important;
+}
+
+/* Expander (feature list) */
+[data-testid="stAppViewContainer"] [data-testid="stExpander"] {
+    background: var(--gs-card) !important;
+    border: 1px solid var(--gs-border) !important;
+    border-radius: var(--gs-radius) !important;
+    box-shadow: 0 10px 24px rgba(2, 6, 23, 0.35) !important;
+    overflow: hidden;
+}
+
+[data-testid="stAppViewContainer"] [data-testid="stExpander"] summary p {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #F1F5F9 !important;
+}
+
+.gs-hero-subtitle {
+    font-size: 0.98rem;
+    color: var(--gs-muted);
+    margin-top: -6px;
+    margin-bottom: 4px;
+    max-width: 900px;
+}
+
+.gs-grid-heading {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #F1F5F9;
+    margin: 4px 0 10px 0;
+}
+
+.gs-section-caption {
+    font-size: 0.88rem;
+    color: var(--gs-muted);
+    margin-top: 10px;
+}
+
+/* KPI cards */
+.gs-kpi-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 2px 2px 2px;
+    border-radius: 14px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gs-kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(59, 130, 246, 0.18);
+}
+
+.gs-kpi-icon { font-size: 1.5rem; }
+
+.gs-kpi-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--gs-muted);
+}
+
+.gs-kpi-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #F8FAFC;
+}
+
+/* Chart cards */
+.gs-chart-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #F8FAFC;
+    margin-bottom: 2px;
+}
+
+.gs-chart-desc {
+    font-size: 0.85rem;
+    color: var(--gs-muted);
+    margin-bottom: 10px;
+}
+
+/* Dataset info card */
+.gs-info-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 7px 0;
+    font-size: 0.92rem;
+    color: var(--gs-text);
+}
+
+.gs-info-label {
+    font-weight: 700;
+    color: #F8FAFC;
+    min-width: 150px;
+    flex-shrink: 0;
+}
+
+.gs-info-value code {
+    background: rgba(148, 163, 184, 0.12);
+    color: #93C5FD;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+/* Insight card */
+.gs-insight-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gs-insight-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: var(--gs-text);
+    line-height: 1.5;
+}
+
+.gs-insight-check {
+    color: var(--gs-primary);
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.gs-empty-state {
+    text-align: center;
+    padding: 22px 10px;
+    color: var(--gs-muted);
+}
+
+/* Sticky header on the dataset preview table, where the browser supports it */
+[data-testid="stAppViewContainer"] [data-testid="stDataFrame"] [role="columnheader"] {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+"""
+
+st.markdown(f"<style>{ANALYTICS_CSS}</style>", unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# SECTION 1 — Hero
 # ---------------------------------------------------------------------------
 
-st.title("📊 Dataset Analytics")
-st.markdown("Explore the dataset used to train the GeoSlide landslide prediction model.")
+st.markdown("## 📊 Dataset Analytics")
+st.markdown(
+    '<div class="gs-hero-subtitle">Explore the training dataset powering GeoSlide AI through '
+    "interactive statistics and visualizations.</div>",
+    unsafe_allow_html=True,
+)
 
 if not is_real_dataset:
     st.warning(
@@ -208,11 +438,11 @@ if not is_real_dataset:
         "renders correctly."
     )
 
-st.divider()
+st.write("")
 
 
 # ---------------------------------------------------------------------------
-# Top Metrics
+# SECTION 2 — Dataset Overview (KPI cards) (UNCHANGED statistics)
 # ---------------------------------------------------------------------------
 
 total_records = len(dataset_df)
@@ -227,156 +457,218 @@ else:
     landslide_events = 0
     non_landslide_events = total_records
 
-metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
-metric_col1.metric("Total Records", f"{total_records:,}")
-metric_col2.metric("Total Features", f"{total_features:,}")
-metric_col3.metric("🟠 Landslide Events", f"{landslide_events:,}")
-metric_col4.metric("🟢 Non-Landslide Events", f"{non_landslide_events:,}")
+kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4, gap="medium")
 
-st.divider()
+kpi_data = [
+    (kpi_col1, "🗂️", "Total Records", total_records),
+    (kpi_col2, "🧬", "Features", total_features),
+    (kpi_col3, "🟠", "Landslide Events", landslide_events),
+    (kpi_col4, "🟢", "Non-Landslide Events", non_landslide_events),
+]
+
+for col, icon, label, value in kpi_data:
+    with col:
+        with st.container(border=True):
+            st.markdown(
+                f"""
+                <div class="gs-kpi-card">
+                    <div class="gs-kpi-icon">{icon}</div>
+                    <div class="gs-kpi-label">{label}</div>
+                    <div class="gs-kpi-value">{value:,}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+st.write("")
 
 
 # ---------------------------------------------------------------------------
-# Charts
+# SECTION 3 — Charts (UNCHANGED chart generation, one premium card each)
 # ---------------------------------------------------------------------------
 
-st.subheader("📈 Charts")
+st.markdown('<div class="gs-grid-heading">📈 Charts</div>', unsafe_allow_html=True)
 
 CHART_TEMPLATE = "plotly_white"
 COLOR_SEQUENCE = ["#2E86AB", "#E67E22", "#27AE60", "#8E44AD", "#C0392B"]
 
-chart_row1_col1, chart_row1_col2 = st.columns(2)
+chart_row1_col1, chart_row1_col2 = st.columns(2, gap="medium")
 
 # 1. Target Distribution
 with chart_row1_col1:
-    st.markdown("**1. Target Distribution**")
-    if resolved_target_column in dataset_df.columns:
-        target_counts = (
-            dataset_df[resolved_target_column]
-            .map({1: "Landslide", 0: "No Landslide"})
-            .fillna(dataset_df[resolved_target_column])
-            .value_counts()
-            .reset_index()
+    with st.container(border=True):
+        st.markdown('<div class="gs-chart-title">Target Distribution</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="gs-chart-desc">Share of landslide vs. non-landslide records in the dataset.</div>',
+            unsafe_allow_html=True,
         )
-        target_counts.columns = ["Class", "Count"]
-        fig_target = px.pie(
-            target_counts,
-            names="Class",
-            values="Count",
-            hole=0.45,
-            color_discrete_sequence=COLOR_SEQUENCE,
-            template=CHART_TEMPLATE,
-        )
-        fig_target.update_traces(textinfo="percent+label")
-        fig_target.update_layout(margin=dict(t=10, b=10, l=10, r=10))
-        st.plotly_chart(fig_target)
-    else:
-        st.info("Target column not available in this dataset.")
+        if resolved_target_column in dataset_df.columns:
+            target_counts = (
+                dataset_df[resolved_target_column]
+                .map({1: "Landslide", 0: "No Landslide"})
+                .fillna(dataset_df[resolved_target_column])
+                .value_counts()
+                .reset_index()
+            )
+            target_counts.columns = ["Class", "Count"]
+            fig_target = px.pie(
+                target_counts,
+                names="Class",
+                values="Count",
+                hole=0.45,
+                color_discrete_sequence=COLOR_SEQUENCE,
+                template=CHART_TEMPLATE,
+            )
+            fig_target.update_traces(textinfo="percent+label")
+            fig_target.update_layout(margin=dict(t=10, b=10, l=10, r=10))
+            st.plotly_chart(fig_target)
+        else:
+            st.info("Target column not available in this dataset.")
 
 # 2. Rainfall Distribution
 with chart_row1_col2:
-    st.markdown("**2. Rainfall Distribution**")
-    if rainfall_col:
-        fig_rainfall = px.histogram(
-            dataset_df,
-            x=rainfall_col,
-            nbins=40,
-            color_discrete_sequence=[COLOR_SEQUENCE[0]],
-            template=CHART_TEMPLATE,
+    with st.container(border=True):
+        st.markdown('<div class="gs-chart-title">Rainfall Distribution</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="gs-chart-desc">Frequency of recorded rainfall values across all rows.</div>',
+            unsafe_allow_html=True,
         )
-        fig_rainfall.update_layout(
-            margin=dict(t=10, b=10, l=10, r=10),
-            xaxis_title="Rainfall",
-            yaxis_title="Frequency",
-        )
-        st.plotly_chart(fig_rainfall)
-    else:
-        st.info("No rainfall column found in this dataset.")
+        if rainfall_col:
+            fig_rainfall = px.histogram(
+                dataset_df,
+                x=rainfall_col,
+                nbins=40,
+                color_discrete_sequence=[COLOR_SEQUENCE[0]],
+                template=CHART_TEMPLATE,
+            )
+            fig_rainfall.update_layout(
+                margin=dict(t=10, b=10, l=10, r=10),
+                xaxis_title="Rainfall",
+                yaxis_title="Frequency",
+            )
+            st.plotly_chart(fig_rainfall)
+        else:
+            st.info("No rainfall column found in this dataset.")
 
-chart_row2_col1, chart_row2_col2 = st.columns(2)
+chart_row2_col1, chart_row2_col2 = st.columns(2, gap="medium")
 
 # 3. Slope Angle Distribution
 with chart_row2_col1:
-    st.markdown("**3. Slope Angle Distribution**")
-    if slope_col:
-        fig_slope = px.histogram(
-            dataset_df,
-            x=slope_col,
-            nbins=40,
-            color_discrete_sequence=[COLOR_SEQUENCE[1]],
-            template=CHART_TEMPLATE,
+    with st.container(border=True):
+        st.markdown('<div class="gs-chart-title">Slope Angle Distribution</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="gs-chart-desc">Distribution of terrain slope angles across all rows.</div>',
+            unsafe_allow_html=True,
         )
-        fig_slope.update_layout(
-            margin=dict(t=10, b=10, l=10, r=10),
-            xaxis_title="Slope Angle (°)",
-            yaxis_title="Frequency",
-        )
-        st.plotly_chart(fig_slope)
-    else:
-        st.info("No slope angle column found in this dataset.")
+        if slope_col:
+            fig_slope = px.histogram(
+                dataset_df,
+                x=slope_col,
+                nbins=40,
+                color_discrete_sequence=[COLOR_SEQUENCE[1]],
+                template=CHART_TEMPLATE,
+            )
+            fig_slope.update_layout(
+                margin=dict(t=10, b=10, l=10, r=10),
+                xaxis_title="Slope Angle (°)",
+                yaxis_title="Frequency",
+            )
+            st.plotly_chart(fig_slope)
+        else:
+            st.info("No slope angle column found in this dataset.")
 
 # 4. Soil Moisture Distribution
 with chart_row2_col2:
-    st.markdown("**4. Soil Moisture Distribution**")
-    if soil_moisture_col:
-        fig_moisture = px.histogram(
-            dataset_df,
-            x=soil_moisture_col,
-            nbins=40,
-            color_discrete_sequence=[COLOR_SEQUENCE[2]],
+    with st.container(border=True):
+        st.markdown('<div class="gs-chart-title">Soil Moisture Distribution</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="gs-chart-desc">Distribution of recorded soil moisture values.</div>',
+            unsafe_allow_html=True,
+        )
+        if soil_moisture_col:
+            fig_moisture = px.histogram(
+                dataset_df,
+                x=soil_moisture_col,
+                nbins=40,
+                color_discrete_sequence=[COLOR_SEQUENCE[2]],
+                template=CHART_TEMPLATE,
+            )
+            fig_moisture.update_layout(
+                margin=dict(t=10, b=10, l=10, r=10),
+                xaxis_title="Soil Moisture (%)",
+                yaxis_title="Frequency",
+            )
+            st.plotly_chart(fig_moisture)
+        else:
+            st.info("No soil moisture column found in this dataset.")
+
+st.write("")
+
+
+# ---------------------------------------------------------------------------
+# SECTION 4 — Correlation Heatmap (UNCHANGED calculation, larger standalone card)
+# ---------------------------------------------------------------------------
+
+st.markdown('<div class="gs-grid-heading">🧮 Correlation Heatmap</div>', unsafe_allow_html=True)
+
+with st.container(border=True):
+    st.markdown(
+        '<div class="gs-chart-desc">Pairwise correlation between numeric features (capped to the '
+        "first 20 numeric columns for readability).</div>",
+        unsafe_allow_html=True,
+    )
+
+    numeric_df = dataset_df.select_dtypes(include=[np.number])
+    if numeric_df.shape[1] >= 2:
+        # Cap to a reasonable number of columns for a readable heatmap.
+        corr_columns = list(numeric_df.columns[:20])
+        corr_matrix = numeric_df[corr_columns].corr()
+
+        fig_corr = px.imshow(
+            corr_matrix,
+            color_continuous_scale="RdBu_r",
+            zmin=-1,
+            zmax=1,
+            aspect="auto",
             template=CHART_TEMPLATE,
         )
-        fig_moisture.update_layout(
+        fig_corr.update_layout(
             margin=dict(t=10, b=10, l=10, r=10),
-            xaxis_title="Soil Moisture (%)",
-            yaxis_title="Frequency",
+            height=600,
         )
-        st.plotly_chart(fig_moisture)
+        st.plotly_chart(fig_corr)
+        st.markdown(
+            '<div class="gs-section-caption">🔴 Red indicates positive correlation. '
+            "🔵 Blue indicates negative correlation.</div>",
+            unsafe_allow_html=True,
+        )
     else:
-        st.info("No soil moisture column found in this dataset.")
+        st.info("Not enough numeric columns to compute a correlation heatmap.")
 
-# 5. Correlation Heatmap
-st.markdown("**5. Correlation Heatmap**")
-numeric_df = dataset_df.select_dtypes(include=[np.number])
-if numeric_df.shape[1] >= 2:
-    # Cap to a reasonable number of columns for a readable heatmap.
-    corr_columns = list(numeric_df.columns[:20])
-    corr_matrix = numeric_df[corr_columns].corr()
+st.write("")
 
-    fig_corr = px.imshow(
-        corr_matrix,
-        color_continuous_scale="RdBu_r",
-        zmin=-1,
-        zmax=1,
-        aspect="auto",
-        template=CHART_TEMPLATE,
+
+# ---------------------------------------------------------------------------
+# SECTION 5 — Dataset Preview (UNCHANGED data: dataset_df.head(100))
+# ---------------------------------------------------------------------------
+
+st.markdown('<div class="gs-grid-heading">🔎 Dataset Preview</div>', unsafe_allow_html=True)
+
+with st.container(border=True):
+    st.markdown(
+        '<div class="gs-chart-desc">First rows of the training dataset, exactly as loaded.</div>',
+        unsafe_allow_html=True,
     )
-    fig_corr.update_layout(
-        margin=dict(t=10, b=10, l=10, r=10),
-        height=600,
-    )
-    st.plotly_chart(fig_corr)
-else:
-    st.info("Not enough numeric columns to compute a correlation heatmap.")
+    st.dataframe(dataset_df.head(100), width="stretch", hide_index=True, height=420)
 
-st.divider()
+st.write("")
 
 
 # ---------------------------------------------------------------------------
-# Dataset Preview
+# SECTION 6 — Dataset Information (UNCHANGED calculations, compact card)
 # ---------------------------------------------------------------------------
 
-st.subheader("🔎 Dataset Preview")
-st.dataframe(dataset_df.head(100), width="stretch", hide_index=True)
-
-st.divider()
-
-
-# ---------------------------------------------------------------------------
-# Dataset Information
-# ---------------------------------------------------------------------------
-
-st.subheader("ℹ️ Dataset Information")
+st.markdown('<div class="gs-grid-heading">ℹ️ Dataset Information</div>', unsafe_allow_html=True)
 
 missing_values_total = int(dataset_df.isna().sum().sum())
 missing_values_pct = (
@@ -385,17 +677,73 @@ missing_values_pct = (
     else 0.0
 )
 
+dataset_name_display = DATASET_NAME if not is_real_dataset else os.path.basename(dataset_source)
+source_display = dataset_source if is_real_dataset else DATASET_SOURCE
+
 with st.container(border=True):
-    info_col1, info_col2 = st.columns(2)
+    info_col1, info_col2 = st.columns(2, gap="medium")
     with info_col1:
-        st.markdown(f"**Dataset Name:** {DATASET_NAME if not is_real_dataset else os.path.basename(dataset_source)}")
-        st.markdown(f"**Target Column:** `{resolved_target_column}`")
-        st.markdown(f"**Features:** {total_features:,}")
+        st.markdown(
+            f"""
+            <div class="gs-info-item"><span class="gs-info-label">📁 Dataset Name</span>
+                <span class="gs-info-value">{dataset_name_display}</span></div>
+            <div class="gs-info-item"><span class="gs-info-label">🎯 Target Column</span>
+                <span class="gs-info-value"><code>{resolved_target_column}</code></span></div>
+            <div class="gs-info-item"><span class="gs-info-label">🧬 Features</span>
+                <span class="gs-info-value">{total_features:,}</span></div>
+            """,
+            unsafe_allow_html=True,
+        )
     with info_col2:
-        st.markdown(f"**Missing Values:** {missing_values_total:,} ({missing_values_pct}%)")
-        st.markdown(f"**Source:** {dataset_source if is_real_dataset else DATASET_SOURCE}")
-        st.markdown(f"**Records:** {total_records:,}")
+        st.markdown(
+            f"""
+            <div class="gs-info-item"><span class="gs-info-label">🗂️ Records</span>
+                <span class="gs-info-value">{total_records:,}</span></div>
+            <div class="gs-info-item"><span class="gs-info-label">⚠️ Missing Values</span>
+                <span class="gs-info-value">{missing_values_total:,} ({missing_values_pct}%)</span></div>
+            <div class="gs-info-item"><span class="gs-info-label">🌐 Source</span>
+                <span class="gs-info-value">{source_display}</span></div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     with st.expander("📄 View feature list", expanded=False):
         feature_cols = [c for c in dataset_df.columns if c != resolved_target_column]
         st.write(", ".join(feature_cols) if feature_cols else "No feature columns available.")
+
+st.write("")
+
+
+# ---------------------------------------------------------------------------
+# SECTION 7 — Insights (derived only from stats already computed above)
+# ---------------------------------------------------------------------------
+
+st.markdown('<div class="gs-grid-heading">💡 Insights</div>', unsafe_allow_html=True)
+
+_class_total = landslide_events + non_landslide_events
+_minority_share = (min(landslide_events, non_landslide_events) / _class_total) if _class_total else 0.0
+_balance_insight = (
+    "Reasonably balanced target classes"
+    if _minority_share >= 0.4
+    else "Imbalanced target classes - minority class makes up "
+    f"{_minority_share * 100:.1f}% of records"
+)
+_missing_insight = (
+    "No missing values in the dataset"
+    if missing_values_total == 0
+    else f"{missing_values_total:,} missing values ({missing_values_pct}% of all cells)"
+)
+
+with st.container(border=True):
+    st.markdown(
+        f"""
+        <ul class="gs-insight-list">
+            <li><span class="gs-insight-check">✓</span> {_balance_insight}</li>
+            <li><span class="gs-insight-check">✓</span> {_missing_insight}</li>
+            <li><span class="gs-insight-check">✓</span> {total_features:,} engineered features</li>
+            <li><span class="gs-insight-check">✓</span> Target column (<code>{resolved_target_column}</code>)
+                present - suitable for supervised learning</li>
+        </ul>
+        """,
+        unsafe_allow_html=True,
+    )
