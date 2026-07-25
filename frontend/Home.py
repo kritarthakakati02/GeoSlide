@@ -46,7 +46,7 @@ from components.sidebar import render_sidebar
 # Page Configuration
 # ------------------------------------------------------------
 st.set_page_config(
-    page_title="GeoSlide",
+    page_title="GeoSlide AI",
     page_icon="🌍",
     layout="wide",
 )
