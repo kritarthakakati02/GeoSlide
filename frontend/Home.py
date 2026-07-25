@@ -62,12 +62,12 @@ HOME_WIRING_CSS = """
 }
 
 [data-testid="stAppViewContainer"] .block-container {
-    padding: var(--ds-space-8) var(--ds-container-padding-desktop) var(--ds-space-12) !important;
+    padding: var(--ds-space-6) var(--ds-container-padding-desktop) var(--ds-space-10) !important;
     max-width: var(--ds-container-max);
 }
 
-.gs-section-spacer { height: var(--ds-space-12); }
-.gs-row-gap { height: var(--ds-space-5); }
+.gs-section-spacer { height: var(--ds-space-8); }
+.gs-row-gap { height: var(--ds-space-4); }
 
 [data-testid="stAppViewContainer"] h1,
 [data-testid="stAppViewContainer"] h2,
@@ -103,25 +103,44 @@ HOME_WIRING_CSS = """
     text-align: center;
 }
 
-/* ---- KPI cards: static info — a gentle lift (not just shadow) reads
-   more premium, but stays subtle since these aren't clickable ---- */
+/* ---- KPI cards: premium metric tiles — white surface, soft shadow,
+   hairline border, equal height, centered icon chip, elevate on hover ---- */
 .gs-kpi [data-testid="stVerticalBlockBorderWrapper"] {
-    padding: var(--ds-space-6) var(--ds-space-5) !important;
-    min-height: 132px;
+    background: var(--ds-surface) !important;
+    border: 1px solid var(--ds-border) !important;
+    border-radius: var(--ds-radius-lg) !important;
+    padding: var(--ds-space-5) !important;
+    height: 128px;
     display: flex !important;
     flex-direction: column;
     justify-content: center;
 }
 .gs-kpi [data-testid="stVerticalBlockBorderWrapper"]:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--ds-shadow-md) !important;
-    border-color: var(--ds-border-strong) !important;
+    transform: translateY(-3px);
+    box-shadow: var(--ds-shadow-hover) !important;
+    border-color: var(--ds-brand-200) !important;
 }
 .gs-kpi-icon-row {
     display: flex;
     align-items: center;
     gap: var(--ds-space-3);
-    margin-bottom: var(--ds-space-3);
+    margin-bottom: var(--ds-space-2);
+}
+.gs-kpi-icon-row .ds-kpi-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: var(--ds-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform var(--ds-transition-base);
+}
+.gs-kpi [data-testid="stVerticalBlockBorderWrapper"]:hover .ds-kpi-icon {
+    transform: scale(1.08);
+}
+.gs-kpi .ds-kpi-value {
+    font-size: 1.85rem !important;
+    letter-spacing: -0.01em;
 }
 
 /* ---- Feature cards: interactive (they link somewhere), so they lift
@@ -129,14 +148,36 @@ HOME_WIRING_CSS = """
 .gs-feature [data-testid="stVerticalBlockBorderWrapper"] {
     position: relative;
     padding: var(--ds-space-6) !important;
-    min-height: 178px;
-    overflow: hidden;
+    height: 100%;
+    display: flex !important;
+    flex-direction: column;
 }
+.gs-feature { height: 100%; }
+.gs-feature > div[data-testid="stVerticalBlock"] { height: 100%; }
 .gs-feature [data-testid="stVerticalBlockBorderWrapper"]:hover {
     transform: var(--ds-lift-hover);
     border-color: var(--ds-brand-200) !important;
     box-shadow: var(--ds-shadow-hover) !important;
 }
+.gs-feature [data-testid="stVerticalBlockBorderWrapper"]:hover .ds-kpi-icon {
+    transform: scale(1.08);
+}
+.gs-feature .ds-kpi-icon { transition: transform var(--ds-transition-base); }
+.gs-feature-illo {
+    margin-top: var(--ds-space-4);
+    margin-bottom: var(--ds-space-4);
+    padding: var(--ds-space-3);
+    background: var(--ds-bg-subtle);
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+    flex: 1 0 auto;
+}
+.gs-feature-illo svg { width: 100%; height: auto; max-width: 240px; }
+.gs-feature [data-testid="stVerticalBlockBorderWrapper"] > div:last-child { margin-top: auto; }
 
 /* ---- Primary CTA = .ds-btn-primary look, applied to the page-link
    wrapper Streamlit generates ---- */
@@ -145,13 +186,16 @@ HOME_WIRING_CSS = """
     border: none !important;
     border-radius: var(--ds-radius-full) !important;
     box-shadow: var(--ds-shadow-sm) !important;
-    padding: 0.15rem 0.2rem !important;
+    padding: 0 !important;
+    overflow: visible !important;
 }
 .gs-cta-primary [data-testid="stVerticalBlockBorderWrapper"]:hover {
     transform: var(--ds-lift-hover);
     box-shadow: 0 14px 28px rgba(47, 107, 79, 0.28) !important;
     border: none !important;
+    filter: brightness(1.04);
 }
+.gs-cta-primary [data-testid="stVerticalBlockBorderWrapper"]:active { transform: var(--ds-lift-active); }
 .gs-cta-primary .stPageLink p { color: var(--ds-text-inverse) !important; }
 
 /* ---- Secondary CTAs = .ds-btn-secondary look ---- */
@@ -160,33 +204,68 @@ HOME_WIRING_CSS = """
     border: 1px solid var(--ds-border) !important;
     border-radius: var(--ds-radius-full) !important;
     box-shadow: var(--ds-shadow-xs) !important;
-    padding: 0.15rem 0.2rem !important;
+    padding: 0 !important;
+    overflow: visible !important;
 }
 .gs-cta-secondary [data-testid="stVerticalBlockBorderWrapper"]:hover {
     transform: var(--ds-lift-hover);
     border-color: var(--ds-brand-300) !important;
     box-shadow: var(--ds-shadow-sm) !important;
+    background: var(--ds-bg-subtle) !important;
+}
+.gs-cta-secondary [data-testid="stVerticalBlockBorderWrapper"]:active { transform: var(--ds-lift-active); }
+
+/* Shared CTA sizing: equal height, full-width pill, no clipped text */
+.gs-cta-row { width: 100%; }
+.gs-cta-row [data-testid="stVerticalBlockBorderWrapper"] { width: 100%; }
+.gs-cta-primary .stPageLink,
+.gs-cta-secondary .stPageLink {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 46px;
+    padding: 0 1.1rem !important;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+.gs-cta-primary .stPageLink p,
+.gs-cta-secondary .stPageLink p {
+    font-size: 0.88rem !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    margin: 0 !important;
+}
+.gs-cta-primary [data-testid="stIconMaterial"],
+.gs-cta-secondary [data-testid="stIconMaterial"] {
+    font-size: 1.05rem !important;
 }
 
-/* ---- Hero visual frame: houses the uploaded illustration. A subtle
-   dot texture uses ds-border as its dot color, and radius/shadow come
-   straight from the token scale — no new values. ---- */
+/* ---- Hero visual frame: houses the uploaded illustration. Padding
+   trimmed down and the frame enlarged so the illustration dominates
+   the right side and anchors the page, per design QA. ---- */
 .gs-hero-visual [data-testid="stVerticalBlockBorderWrapper"] {
     background: var(--ds-bg-subtle) !important;
     border: 1px solid var(--ds-border) !important;
     border-radius: var(--ds-radius-lg) !important;
     box-shadow: var(--ds-shadow-md) !important;
-    padding: var(--ds-space-10) !important;
+    padding: var(--ds-space-4) !important;
     background-image: radial-gradient(var(--ds-border-strong) 1.4px, transparent 1.4px);
     background-size: 20px 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 468px; /* ~30% larger than the previous 360px frame */
+    min-height: 560px;
+    transition: box-shadow var(--ds-transition-base);
+}
+.gs-hero-visual [data-testid="stVerticalBlockBorderWrapper"]:hover {
+    box-shadow: var(--ds-shadow-lg) !important;
 }
 .gs-hero-visual img {
     filter: drop-shadow(0 24px 40px rgba(28, 35, 31, 0.18));
-    transform: scale(1.18); /* fills the larger frame without re-exporting the asset */
+    transform: scale(1.32); /* dominates the right side without re-exporting the asset */
+    transition: transform var(--ds-transition-base);
 }
 
 /* ---- Small structural glue (layout only — no new visual tokens) ---- */
@@ -212,9 +291,6 @@ HOME_WIRING_CSS = """
     line-height: 1.14 !important;
     margin: var(--ds-space-2) 0 0 !important;
 }
-.gs-cta-row [data-testid="stVerticalBlockBorderWrapper"] { padding: 0.2rem 0.25rem !important; }
-.gs-cta-primary .stPageLink, .gs-cta-secondary .stPageLink { padding: 0.7rem 1rem !important; }
-.gs-cta-primary .stPageLink p, .gs-cta-secondary .stPageLink p { font-size: 0.95rem !important; }
 .gs-workflow-row {
     display: flex;
     align-items: flex-start;
@@ -234,6 +310,8 @@ HOME_WIRING_CSS = """
     border-color: var(--ds-brand-200);
     box-shadow: var(--ds-shadow-md);
 }
+.gs-workflow-step .ds-chip-brand { transition: transform var(--ds-transition-base); }
+.gs-workflow-step:hover .ds-chip-brand { transform: scale(1.08); }
 .gs-workflow-badge {
     position: absolute;
     top: calc(-1 * var(--ds-space-3));
@@ -308,43 +386,46 @@ def _icon(name: str, size: int = 20, stroke_width: float = 1.8) -> str:
 
 
 def _mini_illustration(kind: str) -> str:
-    """Small decorative SVG tucked into a feature card corner (purely
-    visual, no interactivity, doesn't affect card functionality)."""
-    wrap = 'style="position:absolute;top:18px;right:18px;opacity:0.6;pointer-events:none;"'
+    """Small decorative SVG rendered in-flow inside a feature card's own
+    illustration panel (purely visual, no interactivity)."""
     if kind == "trend":
         svg = (
-            '<svg width="56" height="34" viewBox="0 0 56 34" fill="none">'
-            '<polyline points="2,29 15,21 26,25 38,11 54,4" stroke="var(--ds-brand-500)" '
-            'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
-            '<circle cx="54" cy="4" r="3" fill="var(--ds-brand-500)"/></svg>'
+            '<svg viewBox="0 0 160 60" fill="none" xmlns="http://www.w3.org/2000/svg">'
+            '<polyline points="4,50 34,36 62,44 96,18 156,6" stroke="var(--ds-brand-500)" '
+            'stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+            '<circle cx="156" cy="6" r="4.5" fill="var(--ds-brand-500)"/>'
+            '<circle cx="96" cy="18" r="3" fill="var(--ds-brand-300)"/>'
+            '<circle cx="34" cy="36" r="3" fill="var(--ds-brand-300)"/></svg>'
         )
     elif kind == "bars":
-        rows = [("42", 0), ("30", 9), ("22", 18), ("13", 27)]
+        rows = [("140", 4), ("104", 18), ("74", 32), ("46", 46)]
         rects = "".join(
-            f'<rect x="0" y="{y}" width="{w}" height="6" rx="3" fill="var(--ds-accent-500)" opacity="{1 - i * 0.16}"/>'
+            f'<rect x="0" y="{y}" width="{w}" height="9" rx="4.5" fill="var(--ds-accent-500)" opacity="{1 - i * 0.16}"/>'
             for i, (w, y) in enumerate(rows)
         )
-        svg = f'<svg width="50" height="36" viewBox="0 0 50 36" fill="none">{rects}</svg>'
+        svg = f'<svg viewBox="0 0 160 60" fill="none" xmlns="http://www.w3.org/2000/svg">{rects}</svg>'
     elif kind == "map":
         svg = (
-            '<svg width="54" height="42" viewBox="0 0 54 42" fill="none">'
-            '<circle cx="27" cy="21" r="18" stroke="var(--ds-amber-500)" stroke-width="1.3" opacity="0.45"/>'
-            '<circle cx="16" cy="15" r="2.1" fill="var(--ds-amber-500)"/>'
-            '<circle cx="35" cy="11" r="1.5" fill="var(--ds-amber-500)"/>'
-            '<circle cx="31" cy="27" r="2.4" fill="var(--ds-amber-500)"/>'
-            '<circle cx="14" cy="28" r="1.7" fill="var(--ds-amber-500)"/></svg>'
+            '<svg viewBox="0 0 160 60" fill="none" xmlns="http://www.w3.org/2000/svg">'
+            '<ellipse cx="80" cy="30" rx="72" ry="24" stroke="var(--ds-amber-500)" stroke-width="1.4" opacity="0.4"/>'
+            '<ellipse cx="80" cy="30" rx="46" ry="15" stroke="var(--ds-amber-500)" stroke-width="1.2" opacity="0.3"/>'
+            '<circle cx="42" cy="22" r="3.4" fill="var(--ds-amber-500)"/>'
+            '<circle cx="96" cy="14" r="2.6" fill="var(--ds-amber-500)"/>'
+            '<circle cx="112" cy="38" r="4" fill="var(--ds-amber-500)"/>'
+            '<circle cx="58" cy="42" r="2.8" fill="var(--ds-amber-500)"/>'
+            '<circle cx="130" cy="24" r="2.2" fill="var(--ds-amber-500)"/></svg>'
         )
     else:  # "pie"
         svg = (
-            '<svg width="42" height="42" viewBox="0 0 42 42" fill="none">'
-            '<circle r="15" cx="21" cy="21" fill="transparent" stroke="var(--ds-brand-500)" '
-            'stroke-width="8" stroke-dasharray="38 60" stroke-dashoffset="0"/>'
-            '<circle r="15" cx="21" cy="21" fill="transparent" stroke="var(--ds-accent-500)" '
-            'stroke-width="8" stroke-dasharray="24 74" stroke-dashoffset="-38"/>'
-            '<circle r="15" cx="21" cy="21" fill="transparent" stroke="var(--ds-amber-500)" '
-            'stroke-width="8" stroke-dasharray="34 64" stroke-dashoffset="-62"/></svg>'
+            '<svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">'
+            '<circle r="21" cx="30" cy="30" fill="transparent" stroke="var(--ds-brand-500)" '
+            'stroke-width="11" stroke-dasharray="53 79" stroke-dashoffset="0"/>'
+            '<circle r="21" cx="30" cy="30" fill="transparent" stroke="var(--ds-accent-500)" '
+            'stroke-width="11" stroke-dasharray="33 99" stroke-dashoffset="-53"/>'
+            '<circle r="21" cx="30" cy="30" fill="transparent" stroke="var(--ds-amber-500)" '
+            'stroke-width="11" stroke-dasharray="47 85" stroke-dashoffset="-86"/></svg>'
         )
-    return f'<div {wrap}>{svg}</div>'
+    return svg
 
 
 def _kpi_card(icon: str, chip_class: str, label: str, value: str) -> None:
@@ -385,12 +466,12 @@ def _workflow_html(steps) -> str:
 def _feature_card(icon: str, chip_class: str, title: str, desc: str, page: str, illo: str) -> None:
     st.markdown('<div class="gs-feature">', unsafe_allow_html=True)
     with st.container(border=True):
-        st.markdown(_mini_illustration(illo), unsafe_allow_html=True)
         st.markdown(
             f"""
             <div class="ds-kpi-icon {chip_class}" style="width:46px;height:46px;">{_icon(icon, 21)}</div>
-            <div class="ds-card-title" style="margin-top:var(--ds-space-2);">{title}</div>
+            <div class="ds-card-title" style="margin-top:var(--ds-space-3);">{title}</div>
             <div class="ds-card-desc" style="min-height:42px;margin-top:2px;">{desc}</div>
+            <div class="gs-feature-illo">{_mini_illustration(illo)}</div>
             """,
             unsafe_allow_html=True,
         )
@@ -442,7 +523,7 @@ with left:
 
     st.write("")
     st.write("")
-    cta1, cta2, cta3 = st.columns(3, gap="small")
+    cta1, cta2, cta3 = st.columns(3, gap="medium")
     with cta1:
         st.markdown('<div class="gs-cta-primary gs-cta-row">', unsafe_allow_html=True)
         with st.container(border=True):
