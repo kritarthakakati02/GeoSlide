@@ -35,86 +35,8 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
-[data-testid="stSidebar"] {
-  background: linear-gradient(180deg, var(--forest-green) 0%, #1d4b37 100%);
-  padding: 0.75rem 0.8rem 1rem;
-}
-
-[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
-  padding-top: 0.35rem;
-}
-
-.sidebar-brand-card {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: var(--radius);
-  padding: 0.95rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
-}
-
-.sidebar-brand-logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.16);
-  font-size: 1.1rem;
-}
-
-.sidebar-brand-title {
-  font-size: 1.02rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 0.12rem;
-}
-
-.sidebar-brand-subtitle {
-  font-size: 0.86rem;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.4;
-}
-
-.sidebar-nav-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin: 0.2rem 0 0.8rem;
-}
-
-.nav-item {
-  border-radius: 12px;
-  padding: 0.2rem;
-}
-
-.nav-item .stPageLink {
-  color: rgba(255, 255, 255, 0.9) !important;
-  font-weight: 600;
-  border-radius: 10px;
-  padding: 0.6rem 0.7rem;
-  display: block;
-}
-
-.nav-item.active {
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.nav-item.active .stPageLink {
-  color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.sidebar-footer {
-  margin-top: auto;
-  padding: 0.8rem 0.3rem 0.3rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.75);
-}
+/* Sidebar styling now lives entirely in components/sidebar.py so it is
+   self-contained and identical on every page (see _SIDEBAR_CSS there). */
 
 [data-testid="stVerticalBlockBorderWrapper"] {
   background: var(--card-bg);
