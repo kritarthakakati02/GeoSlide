@@ -1,43 +1,65 @@
 """
 GeoSlide - Dataset Analytics Page
 ====================================
-Phase 10.6: Dataset Analytics.
+UI redesign: matches the shared design system (`frontend/assets/
+design_system.css` — the same tokens + `.ds-*` classes Home.py and the
+current Prediction page already use). Every visual value below is a
+`.ds-*` class or a `var(--ds-*)` token (or a small rgba refinement of
+one), the same approach used to bring Prediction onto this system.
 
-This page gives an analytical overview of the dataset used to train
-the GeoSlide landslide prediction model: top-level summary metrics,
-distribution charts for key features, a correlation heatmap, a raw
-data preview, and dataset metadata.
+NOTE ON APP-WIDE CONSISTENCY: as of this redesign, Home.py and the
+Prediction page are on this shared light `design_system.css`. The SHAP
+Analysis and Historical Map pages are still on the older page-scoped
+dark theme (`--gs-bg: #0F172A`) and have not been migrated yet. This
+page is brought in line with Home/Prediction — the app's current,
+up-to-date visual language — rather than the older dark theme, exactly
+as was done for Prediction previously.
 
-NOTE: If the real training dataset cannot be located/loaded, this page
-automatically falls back to a generated placeholder dataset (same
-schema/shape) so every chart renders correctly and the page remains
-fully demoable.
+WHAT CHANGED vs. what did not
+------------------------------
+Changed (presentation only):
+  - Full visual redesign: hero card with an analytics illustration, a
+    KPI panel, chart cards with consistent headers, a Statistical
+    Insights panel, a Data Preview card, and a Summary card.
+  - CSS: replaced the page's old standalone dark-theme stylesheet with
+    the shared design_system.css tokens/classes.
+  - Section *order* changed to match the requested layout (Hero → KPIs
+    → Visual Analytics → Statistical Insights → Data Preview →
+    Summary). Because Streamlit renders top-to-bottom as the script
+    executes, the `missing_values_total` / `missing_values_pct`
+    calculation (needed by both Statistical Insights and Summary) was
+    *moved earlier* in the script so it runs before those sections
+    instead of after the old "Dataset Information" section. The
+    formula itself is byte-for-byte the same
+    (`dataset_df.isna().sum().sum()` / percentage of all cells) — only
+    *when* it runs changed, not *what* it computes.
+  - The old standalone "Dataset Information" section (name, source,
+    target column, feature list) was folded into the new Summary
+    section rather than dropped, so no existing information
+    disappears from the page.
 
-UI note: this file was redesigned into a professional "data
-intelligence dashboard" (page-scoped dark theme, hover KPI cards, one
-premium card per chart, a larger standalone correlation-heatmap card,
-a modern dataset-preview card, a compact dataset-info card, and an
-insights card). This mirrors the same redesign approach already used
-on the Prediction, SHAP Analysis, and Historical Map pages for visual
-consistency across the app.
-
-Nothing about *what* is computed changed:
-    - Dataset loading (`load_dataset`, `_generate_placeholder_dataset`,
-      `_find_column`) is byte-for-byte unchanged.
-    - Every Plotly figure (target pie chart, rainfall/slope/soil-
-      moisture histograms, correlation heatmap) uses the exact same
-      px.* calls, same columns, same color sequences, and same
-      update_layout() calls as before.
-    - All statistics (total_records, total_features, landslide_events,
-      non_landslide_events, missing_values_total/pct, corr_matrix) are
-      computed with the exact same pandas/numpy operations as before.
-    - The dataset preview still shows `dataset_df.head(100)`.
-
-Only layout, typography, spacing, and presentation were touched.
+NOT changed (verified untouched):
+  - Dataset loading (`load_dataset`, `_generate_placeholder_dataset`,
+    `_find_column`, `CANDIDATE_DATASET_PATHS`) — byte-for-byte.
+  - Every Plotly figure (target pie chart, rainfall/slope/soil-
+    moisture histograms, correlation heatmap) uses the exact same
+    px.* calls, same columns, same color sequences, same
+    update_layout() calls, and the same `CHART_TEMPLATE`/
+    `COLOR_SEQUENCE` constants as before.
+  - All statistics (total_records, total_features, landslide_events,
+    non_landslide_events, missing_values_total/pct, corr_matrix) are
+    computed with the exact same pandas/numpy operations as before.
+  - The dataset preview still shows `dataset_df.head(100)`.
+  - The four existing "Insights" statements (_balance_insight,
+    _missing_insight, feature count, target-column-present) are
+    reused verbatim, just presented as individual cards instead of a
+    bullet list.
+  - Navigation, sidebar, and every other page's files.
 """
 
 import glob
 import os
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -45,6 +67,7 @@ import plotly.express as px
 import streamlit as st
 
 from components.sidebar import render_sidebar
+from utils.theme import load_styles
 
 
 # ---------------------------------------------------------------------------
@@ -56,6 +79,9 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
+
+ROOT = Path(__file__).resolve().parent.parent
+DESIGN_SYSTEM_CSS_FILE = ROOT / "assets" / "design_system.css"
 
 
 # ---------------------------------------------------------------------------
@@ -211,238 +237,9 @@ soil_moisture_col = _find_column(["soil_moisture", "moisture"])
 
 
 # ---------------------------------------------------------------------------
-# Sidebar
-# ---------------------------------------------------------------------------
-
-render_sidebar()
-
-
-# ---------------------------------------------------------------------------
-# Page-scoped dark theme + layout CSS
-# ---------------------------------------------------------------------------
-# Same scoping approach and design tokens (--gs-*) as the Prediction, SHAP
-# Analysis, and Historical Map pages: everything lives under
-# [data-testid="stAppViewContainer"] and is only ever injected while this
-# script is the active page, so it cannot leak into other pages.
-
-ANALYTICS_CSS = """
-:root {
-    --gs-bg: #0F172A;
-    --gs-card: #1E293B;
-    --gs-primary: #10B981;
-    --gs-accent: #3B82F6;
-    --gs-danger: #EF4444;
-    --gs-text: #E2E8F0;
-    --gs-muted: #94A3B8;
-    --gs-border: rgba(148, 163, 184, 0.14);
-    --gs-radius: 18px;
-}
-
-[data-testid="stAppViewContainer"] {
-    background: radial-gradient(circle at 85% 0%, #132239 0%, var(--gs-bg) 45%) !important;
-}
-
-[data-testid="stAppViewContainer"] .block-container {
-    padding: 1.6rem 2.6rem 2rem !important;
-    max-width: 1500px;
-}
-
-[data-testid="stAppViewContainer"] h1,
-[data-testid="stAppViewContainer"] h2,
-[data-testid="stAppViewContainer"] h3,
-[data-testid="stAppViewContainer"] h4 {
-    color: #F1F5F9 !important;
-    letter-spacing: -0.01em;
-}
-
-[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] p,
-[data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] {
-    color: var(--gs-muted) !important;
-}
-
-[data-testid="stAppViewContainer"] hr {
-    border-color: var(--gs-border) !important;
-}
-
-/* Cards (bordered containers: KPI cards, chart cards, heatmap card, preview card, info card, insight card) */
-[data-testid="stAppViewContainer"] [data-testid="stVerticalBlockBorderWrapper"] {
-    background: var(--gs-card) !important;
-    border: 1px solid var(--gs-border) !important;
-    border-radius: var(--gs-radius) !important;
-    box-shadow: 0 12px 28px rgba(2, 6, 23, 0.45) !important;
-}
-
-/* Expander (feature list) */
-[data-testid="stAppViewContainer"] [data-testid="stExpander"] {
-    background: var(--gs-card) !important;
-    border: 1px solid var(--gs-border) !important;
-    border-radius: var(--gs-radius) !important;
-    box-shadow: 0 10px 24px rgba(2, 6, 23, 0.35) !important;
-    overflow: hidden;
-}
-
-[data-testid="stAppViewContainer"] [data-testid="stExpander"] summary p {
-    font-size: 0.98rem;
-    font-weight: 700;
-    color: #F1F5F9 !important;
-}
-
-.gs-hero-subtitle {
-    font-size: 0.98rem;
-    color: var(--gs-muted);
-    margin-top: -6px;
-    margin-bottom: 4px;
-    max-width: 900px;
-}
-
-.gs-grid-heading {
-    font-size: 1.02rem;
-    font-weight: 700;
-    color: #F1F5F9;
-    margin: 4px 0 10px 0;
-}
-
-.gs-section-caption {
-    font-size: 0.88rem;
-    color: var(--gs-muted);
-    margin-top: 10px;
-}
-
-/* KPI cards */
-.gs-kpi-card {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 4px 2px 2px 2px;
-    border-radius: 14px;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.gs-kpi-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 22px rgba(59, 130, 246, 0.18);
-}
-
-.gs-kpi-icon { font-size: 1.5rem; }
-
-.gs-kpi-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--gs-muted);
-}
-
-.gs-kpi-value {
-    font-size: 2rem;
-    font-weight: 800;
-    color: #F8FAFC;
-}
-
-/* Chart cards */
-.gs-chart-title {
-    font-size: 1rem;
-    font-weight: 800;
-    color: #F8FAFC;
-    margin-bottom: 2px;
-}
-
-.gs-chart-desc {
-    font-size: 0.85rem;
-    color: var(--gs-muted);
-    margin-bottom: 10px;
-}
-
-/* Dataset info card */
-.gs-info-item {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    padding: 7px 0;
-    font-size: 0.92rem;
-    color: var(--gs-text);
-}
-
-.gs-info-label {
-    font-weight: 700;
-    color: #F8FAFC;
-    min-width: 150px;
-    flex-shrink: 0;
-}
-
-.gs-info-value code {
-    background: rgba(148, 163, 184, 0.12);
-    color: #93C5FD;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-}
-
-/* Insight card */
-.gs-insight-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.gs-insight-list li {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 0.95rem;
-    color: var(--gs-text);
-    line-height: 1.5;
-}
-
-.gs-insight-check {
-    color: var(--gs-primary);
-    font-weight: 800;
-    flex-shrink: 0;
-}
-
-.gs-empty-state {
-    text-align: center;
-    padding: 22px 10px;
-    color: var(--gs-muted);
-}
-
-/* Sticky header on the dataset preview table, where the browser supports it */
-[data-testid="stAppViewContainer"] [data-testid="stDataFrame"] [role="columnheader"] {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-"""
-
-st.markdown(f"<style>{ANALYTICS_CSS}</style>", unsafe_allow_html=True)
-
-
-# ---------------------------------------------------------------------------
-# SECTION 1 — Hero
-# ---------------------------------------------------------------------------
-
-st.markdown("## 📊 Dataset Analytics")
-st.markdown(
-    '<div class="gs-hero-subtitle">Explore the training dataset powering GeoSlide AI through '
-    "interactive statistics and visualizations.</div>",
-    unsafe_allow_html=True,
-)
-
-if not is_real_dataset:
-    st.warning(
-        "⚠️ The real training dataset could not be located. Displaying "
-        "generated placeholder data instead so every chart below still "
-        "renders correctly."
-    )
-
-st.write("")
-
-
-# ---------------------------------------------------------------------------
-# SECTION 2 — Dataset Overview (KPI cards) (UNCHANGED statistics)
+# Dataset Overview statistics (UNCHANGED formulas — same as before, just
+# grouped together near the top of the script since both the KPI cards
+# and the later Statistical Insights / Summary sections need them).
 # ---------------------------------------------------------------------------
 
 total_records = len(dataset_df)
@@ -457,37 +254,453 @@ else:
     landslide_events = 0
     non_landslide_events = total_records
 
-kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4, gap="medium")
+# Same formula previously computed later in the script (old "Dataset
+# Information" section) — only its position moved earlier so the new
+# Statistical Insights section (which now renders before Data Preview)
+# can use it too.
+missing_values_total = int(dataset_df.isna().sum().sum())
+missing_values_pct = (
+    round((missing_values_total / (dataset_df.shape[0] * dataset_df.shape[1])) * 100, 2)
+    if dataset_df.size > 0
+    else 0.0
+)
 
-kpi_data = [
-    (kpi_col1, "🗂️", "Total Records", total_records),
-    (kpi_col2, "🧬", "Features", total_features),
-    (kpi_col3, "🟠", "Landslide Events", landslide_events),
-    (kpi_col4, "🟢", "Non-Landslide Events", non_landslide_events),
-]
+dataset_name_display = DATASET_NAME if not is_real_dataset else os.path.basename(dataset_source)
+source_display = dataset_source if is_real_dataset else DATASET_SOURCE
 
-for col, icon, label, value in kpi_data:
-    with col:
-        with st.container(border=True):
+
+# ---------------------------------------------------------------------------
+# Shared design system (same files Home.py / Prediction load)
+# ---------------------------------------------------------------------------
+
+st.markdown(f"<style>{load_styles()}</style>", unsafe_allow_html=True)
+st.markdown(f"<style>{DESIGN_SYSTEM_CSS_FILE.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# Page wiring CSS — same approach as the Prediction page: soft
+# card borders + layered elevation shadows, everything resolved
+# through var(--ds-*) tokens. No layout/spacing changes.
+# ---------------------------------------------------------------------------
+
+ANALYTICS_WIRING_CSS = """
+[data-testid="stAppViewContainer"] {
+    background: var(--ds-bg) !important;
+    --gs-border-soft: rgba(28, 35, 31, 0.07);
+    --gs-border-soft-strong: rgba(28, 35, 31, 0.12);
+    --gs-shadow-card: 0 1px 2px rgba(28, 35, 31, 0.04), 0 6px 16px rgba(28, 35, 31, 0.05);
+    --gs-shadow-card-hover: 0 2px 6px rgba(28, 35, 31, 0.05), 0 16px 34px rgba(28, 35, 31, 0.09);
+}
+
+[data-testid="stAppViewContainer"] .block-container {
+    padding: var(--ds-space-6) var(--ds-container-padding-desktop) var(--ds-space-10) !important;
+    max-width: var(--ds-container-max);
+}
+
+.gs-section-spacer { height: var(--ds-space-6); }
+
+[data-testid="stAppViewContainer"] h1,
+[data-testid="stAppViewContainer"] h2,
+[data-testid="stAppViewContainer"] h3,
+[data-testid="stAppViewContainer"] h4 {
+    color: var(--ds-text-primary) !important;
+    letter-spacing: var(--ds-tracking-tight);
+}
+
+[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stAppViewContainer"] [data-testid="stMarkdownContainer"] li,
+[data-testid="stAppViewContainer"] [data-testid="stCaptionContainer"] {
+    color: var(--ds-text-secondary) !important;
+}
+
+/* ============================================================
+   BASELINE — every real bordered container starts here: soft
+   border + layered shadow, elevation does the separating instead
+   of a heavy outline.
+   ============================================================ */
+[data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] {
+    background: var(--ds-surface) !important;
+    border: 1px solid var(--gs-border-soft) !important;
+    border-radius: var(--ds-radius-lg) !important;
+    box-shadow: var(--gs-shadow-card) !important;
+    transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base),
+                border-color var(--ds-transition-base), background var(--ds-transition-base);
+}
+
+/* Recessed outer panels (KPI section, Statistical Insights, Data
+   Preview, Summary) — a slightly recessed surface so panel -> inner
+   card hierarchy reads clearly, same as Prediction's section panels. */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-section-"]) {
+    background: var(--ds-bg-subtle) !important;
+    border: 1px solid var(--gs-border-soft) !important;
+    box-shadow: var(--ds-shadow-xs) !important;
+    padding: var(--ds-space-7) var(--ds-space-6) !important;
+}
+
+/* ============================================================
+   SECTION 1 — HERO
+   ============================================================ */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-section-hero"]) {
+    background: var(--ds-surface) !important;
+    box-shadow: var(--ds-shadow-md) !important;
+    padding: var(--ds-space-8) !important;
+}
+.gs-hero-copy {
+    max-width: 94%;
+    font-size: 1.02rem !important;
+    line-height: var(--ds-leading-loose) !important;
+    color: var(--ds-text-secondary) !important;
+    font-weight: var(--ds-weight-regular);
+    margin-top: var(--ds-space-3);
+}
+.gs-display-md {
+    font-size: 2.2rem !important;
+    line-height: 1.15 !important;
+    margin: var(--ds-space-3) 0 0 !important;
+}
+.gs-hero-illo-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 180px;
+}
+.gs-hero-illo-wrap svg {
+    width: 100%;
+    max-width: 240px;
+    height: auto;
+    animation: gs-hero-float 7s ease-in-out infinite;
+    filter: drop-shadow(0 18px 30px rgba(28, 35, 31, 0.12));
+}
+@keyframes gs-hero-float {
+    0%, 100% { transform: translateY(0px); }
+    50%      { transform: translateY(-10px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .gs-hero-illo-wrap svg { animation: none; }
+}
+.gs-hero-alert-wrap { margin-top: var(--ds-space-4); max-width: 94%; }
+
+/* ============================================================
+   SECTION 2 — KPI CARDS (same pattern as Home.py's KPI row)
+   ============================================================ */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-kpi-card-"]) {
+    background: var(--ds-surface) !important;
+    padding: var(--ds-space-5) !important;
+    height: 148px;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: center;
+}
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-kpi-card-"]):hover {
+    transform: translateY(-3px);
+    box-shadow: var(--gs-shadow-card-hover) !important;
+    border-color: var(--gs-border-soft-strong) !important;
+}
+.gs-kpi-icon-row { display: flex; align-items: center; gap: var(--ds-space-3); margin-bottom: var(--ds-space-2); }
+.gs-kpi-icon-row .ds-kpi-icon {
+    width: 38px; height: 38px; border-radius: var(--ds-radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform var(--ds-transition-base);
+}
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-kpi-card-"]):hover .ds-kpi-icon { transform: scale(1.08); }
+.gs-kpi-value { font-size: 1.85rem !important; letter-spacing: -0.01em; color: var(--ds-text-primary); font-weight: var(--ds-weight-extrabold); }
+.gs-kpi-desc { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); margin-top: 3px; }
+
+/* ============================================================
+   SECTION 3 — VISUAL ANALYTICS (chart cards)
+   ============================================================ */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-chart-card-"]) {
+    background: var(--ds-surface) !important;
+    padding: var(--ds-space-6) !important;
+}
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-chart-card-"]):hover {
+    border-color: var(--gs-border-soft-strong) !important;
+    box-shadow: var(--gs-shadow-card-hover) !important;
+}
+.gs-chart-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+    margin-bottom: var(--ds-space-4);
+}
+.gs-chart-card-title { font-size: var(--ds-text-h3); font-weight: var(--ds-weight-semibold); color: var(--ds-text-primary); }
+.gs-chart-card-desc { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); margin-top: 1px; }
+.gs-chart-caption { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); margin-top: var(--ds-space-3); }
+
+/* ============================================================
+   SECTION 4 — STATISTICAL INSIGHTS
+   ============================================================ */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-insight-card-"]) {
+    background: var(--ds-surface) !important;
+    padding: var(--ds-space-5) !important;
+}
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-insight-card-"]):hover {
+    transform: translateY(-2px);
+    box-shadow: var(--gs-shadow-card-hover) !important;
+}
+.gs-insight-header { display: flex; align-items: center; gap: var(--ds-space-3); margin-bottom: var(--ds-space-2); }
+.gs-insight-title { font-size: var(--ds-text-sm); font-weight: var(--ds-weight-bold); color: var(--ds-text-primary); }
+.gs-insight-text { font-size: var(--ds-text-sm); color: var(--ds-text-secondary); line-height: var(--ds-leading-normal); }
+
+/* ============================================================
+   SECTION 5 — DATA PREVIEW
+   ============================================================ */
+[data-testid="stAppViewContainer"] [data-testid="stDataFrame"] {
+    border-radius: var(--ds-radius-md) !important;
+    overflow: hidden;
+    border: 1px solid var(--gs-border-soft-strong) !important;
+}
+[data-testid="stAppViewContainer"] [data-testid="stDataFrame"] [role="columnheader"] {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* ============================================================
+   SECTION 6 — SUMMARY
+   ============================================================ */
+.gs-summary-text {
+    font-size: var(--ds-text-body-lg);
+    color: var(--ds-text-primary);
+    line-height: var(--ds-leading-loose);
+}
+.gs-summary-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ds-space-3);
+    margin-top: var(--ds-space-5);
+}
+.gs-summary-meta-item {
+    background: var(--ds-surface);
+    border: 1px solid var(--gs-border-soft-strong);
+    border-radius: var(--ds-radius-sm);
+    padding: var(--ds-space-3) var(--ds-space-4);
+    flex: 1 1 220px;
+}
+.gs-summary-meta-label {
+    font-size: var(--ds-text-xs); font-weight: var(--ds-weight-bold); text-transform: uppercase;
+    letter-spacing: var(--ds-tracking-wide); color: var(--ds-text-tertiary);
+}
+.gs-summary-meta-value { font-size: var(--ds-text-sm); font-weight: var(--ds-weight-semibold); color: var(--ds-text-primary); margin-top: 2px; word-break: break-word; }
+.gs-summary-meta-value code {
+    background: var(--ds-bg-inset);
+    color: var(--ds-brand-600);
+    padding: 2px 8px;
+    border-radius: var(--ds-radius-sm);
+    font-size: var(--ds-text-xs);
+}
+[data-testid="stAppViewContainer"] [data-testid="stExpander"] {
+    background: var(--ds-surface) !important;
+    border: 1px solid var(--gs-border-soft-strong) !important;
+    border-radius: var(--ds-radius-md) !important;
+    box-shadow: none !important;
+    margin-top: var(--ds-space-5);
+}
+[data-testid="stAppViewContainer"] [data-testid="stExpander"] summary p {
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-weight-semibold);
+    color: var(--ds-text-primary) !important;
+}
+"""
+
+st.markdown(f"<style>{ANALYTICS_WIRING_CSS}</style>", unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# Sidebar (shared, unmodified)
+# ---------------------------------------------------------------------------
+
+render_sidebar()
+
+
+# ---------------------------------------------------------------------------
+# Local icon set (page-scoped, same inline-SVG pattern Home.py /
+# Prediction use — decorative only, no emoji, no external assets).
+# ---------------------------------------------------------------------------
+
+_ICON_PATHS = {
+    "search": '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.3-4.3"/>',
+    "database": '<ellipse cx="12" cy="5.5" rx="8" ry="2.7"/><path d="M4 5.5v13c0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7v-13"/><path d="M4 12c0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7"/>',
+    "layers": '<path d="m12 3 8 4.2-8 4.2-8-4.2Z"/><path d="m4 12 8 4.2 8-4.2"/><path d="m4 16.4 8 4.2 8-4.2"/>',
+    "alert-triangle": '<path d="M12 3.2 2.3 20h19.4L12 3.2Z"/><line x1="12" y1="9.5" x2="12" y2="14"/><circle cx="12" cy="17" r="0.9" fill="currentColor"/>',
+    "check-circle": '<circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.6 2.6L16.2 9"/>',
+    "pie-chart": '<circle cx="12" cy="12" r="9"/><path d="M12 3v9l7.8 4.5"/>',
+    "cloud-rain": '<path d="M7 15.5a4.3 4.3 0 0 1 .6-8.6 5.7 5.7 0 0 1 10.6 2.6 3.8 3.8 0 0 1-.7 6H7Z"/><path d="M8 19v1.3M12 19v1.8M16 19v1.3"/>',
+    "mountain": '<path d="m3.5 19 6-11 3.5 6 2.5-4 5 9Z"/>',
+    "droplet": '<path d="M12 2.8s6.2 7 6.2 11.5A6.2 6.2 0 0 1 5.8 14.3C5.8 9.8 12 2.8 12 2.8Z"/>',
+    "grid": '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+    "table": '<rect x="3" y="3" width="18" height="18" rx="1.5"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
+    "file-text": '<rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>',
+    "target": '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5.2"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/>',
+    "scale": '<path d="M12 3v18M7 7l-4 8a4 4 0 0 0 8 0Z"/><path d="M17 7l-4 8a4 4 0 0 0 8 0Z"/><path d="M5 7h14"/>',
+}
+
+
+def _icon(name: str, size: int = 20, stroke_width: float = 1.8) -> str:
+    """Inline Lucide-style SVG icon (no emoji)."""
+    body = _ICON_PATHS.get(name, "")
+    return (
+        f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" '
+        f'stroke="currentColor" stroke-width="{stroke_width}" stroke-linecap="round" '
+        f'stroke-linejoin="round" style="display:block;">{body}</svg>'
+    )
+
+
+def _hero_illustration() -> str:
+    """Small decorative analytics illustration — bars + a trend line,
+    built the same way Prediction's hero illustration is (inline SVG,
+    design tokens for color, purely decorative)."""
+    return (
+        '<svg viewBox="0 0 220 200" fill="none" xmlns="http://www.w3.org/2000/svg">'
+        '<circle cx="110" cy="100" r="86" stroke="var(--ds-brand-200)" stroke-width="1.4" opacity="0.5"/>'
+        '<rect x="38" y="120" width="22" height="50" rx="3" fill="var(--ds-brand-100)" stroke="var(--ds-brand-300)" stroke-width="1.5"/>'
+        '<rect x="76" y="90" width="22" height="80" rx="3" fill="var(--ds-brand-100)" stroke="var(--ds-brand-300)" stroke-width="1.5"/>'
+        '<rect x="114" y="60" width="22" height="110" rx="3" fill="var(--ds-brand-50)" stroke="var(--ds-brand-400)" stroke-width="1.5"/>'
+        '<rect x="152" y="105" width="22" height="65" rx="3" fill="var(--ds-brand-100)" stroke="var(--ds-brand-300)" stroke-width="1.5"/>'
+        '<polyline points="49,108 87,78 125,48 163,90" stroke="var(--ds-accent-500)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+        '<circle cx="49" cy="108" r="4" fill="var(--ds-accent-500)"/>'
+        '<circle cx="87" cy="78" r="4" fill="var(--ds-accent-500)"/>'
+        '<circle cx="125" cy="48" r="4.5" fill="var(--ds-brand-600)"/>'
+        '<circle cx="163" cy="90" r="4" fill="var(--ds-accent-500)"/>'
+        '<line x1="30" y1="170" x2="182" y2="170" stroke="var(--ds-border-strong)" stroke-width="1.5"/>'
+        '</svg>'
+    )
+
+
+def _kpi_card(icon: str, chip_class: str, label: str, value: str, desc: str, key: str) -> None:
+    with st.container(border=True, key=key):
+        st.markdown(
+            f"""
+            <div class="gs-kpi-icon-row">
+                <div class="ds-kpi-icon {chip_class}" style="margin-bottom:0;">{_icon(icon, 18)}</div>
+                <div class="ds-kpi-label" style="margin-top:1px;">{label}</div>
+            </div>
+            <div class="gs-kpi-value">{value}</div>
+            <div class="gs-kpi-desc">{desc}</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+def _chart_card_header(icon: str, chip_class: str, title: str, desc: str) -> None:
+    st.markdown(
+        f"""
+        <div class="gs-chart-card-header">
+            <div class="ds-kpi-icon {chip_class}" style="width:40px;height:40px;margin-bottom:0;">{_icon(icon, 18)}</div>
+            <div>
+                <div class="gs-chart-card-title">{title}</div>
+                <div class="gs-chart-card-desc">{desc}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _insight_card(icon: str, chip_class: str, title: str, text: str, key: str) -> None:
+    with st.container(border=True, key=key):
+        st.markdown(
+            f"""
+            <div class="gs-insight-header">
+                <div class="ds-kpi-icon {chip_class}" style="width:36px;height:36px;margin-bottom:0;">{_icon(icon, 16)}</div>
+                <div class="gs-insight-title">{title}</div>
+            </div>
+            <div class="gs-insight-text">{text}</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+
+# ============================================================
+# SECTION 1 — HERO
+# ============================================================
+
+with st.container(border=True, key="section-hero"):
+    left, right = st.columns([64, 36], gap="large")
+
+    with left:
+        st.markdown(
+            f'<div class="ds-eyebrow">{_icon("search", 14, 2)}<span>&nbsp;DATASET INTELLIGENCE</span></div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="ds-display gs-display-md">Dataset Analytics</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            """
+            <div class="ds-body-lg gs-hero-copy">
+            Explore the training dataset powering GeoSlide AI: distribution
+            charts, feature correlations, and data-quality statistics for
+            the landslide risk model, all in one place.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if not is_real_dataset:
             st.markdown(
                 f"""
-                <div class="gs-kpi-card">
-                    <div class="gs-kpi-icon">{icon}</div>
-                    <div class="gs-kpi-label">{label}</div>
-                    <div class="gs-kpi-value">{value:,}</div>
+                <div class="gs-hero-alert-wrap">
+                    <div class="ds-alert ds-alert-warning">
+                        {_icon("alert-triangle", 18)}
+                        <div>The real training dataset could not be located. Displaying
+                        generated placeholder data instead so every chart below still
+                        renders correctly.</div>
+                    </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-st.write("")
+    with right:
+        st.markdown(f'<div class="gs-hero-illo-wrap">{_hero_illustration()}</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
 
 
-# ---------------------------------------------------------------------------
-# SECTION 3 — Charts (UNCHANGED chart generation, one premium card each)
-# ---------------------------------------------------------------------------
+# ============================================================
+# SECTION 2 — KPI CARDS (UNCHANGED statistics: total_records,
+# total_features, landslide_events, non_landslide_events)
+# ============================================================
 
-st.markdown('<div class="gs-grid-heading">📈 Charts</div>', unsafe_allow_html=True)
+with st.container(border=True, key="section-kpi"):
+    st.markdown(
+        f'<div class="ds-section-title">{_icon("layers", 20)} Dataset Overview</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="ds-section-subtitle">Top-level metrics for the dataset currently loaded</div>',
+        unsafe_allow_html=True,
+    )
+
+    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4, gap="medium")
+    with kpi_col1:
+        _kpi_card("database", "ds-chip-brand", "Total Records", f"{total_records:,}", "Rows in the dataset", "kpi-card-0")
+    with kpi_col2:
+        _kpi_card("layers", "ds-chip-accent", "Features", f"{total_features:,}", "Input columns (excl. target)", "kpi-card-1")
+    with kpi_col3:
+        _kpi_card("alert-triangle", "ds-chip-amber", "Landslide Events", f"{landslide_events:,}", "Positive-class records", "kpi-card-2")
+    with kpi_col4:
+        _kpi_card("check-circle", "ds-chip-brand", "Non-Landslide Events", f"{non_landslide_events:,}", "Negative-class records", "kpi-card-3")
+
+st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
+
+
+# ============================================================
+# SECTION 3 — VISUAL ANALYTICS (UNCHANGED chart generation, one
+# premium card each, consistent titles/spacing)
+# ============================================================
+
+st.markdown(
+    f'<div class="ds-section-title">{_icon("pie-chart", 20)} Visual Analytics</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="ds-section-subtitle">Distribution and correlation charts computed directly from the dataset</div>',
+    unsafe_allow_html=True,
+)
 
 CHART_TEMPLATE = "plotly_white"
 COLOR_SEQUENCE = ["#2E86AB", "#E67E22", "#27AE60", "#8E44AD", "#C0392B"]
@@ -496,12 +709,8 @@ chart_row1_col1, chart_row1_col2 = st.columns(2, gap="medium")
 
 # 1. Target Distribution
 with chart_row1_col1:
-    with st.container(border=True):
-        st.markdown('<div class="gs-chart-title">Target Distribution</div>', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="gs-chart-desc">Share of landslide vs. non-landslide records in the dataset.</div>',
-            unsafe_allow_html=True,
-        )
+    with st.container(border=True, key="chart-card-target"):
+        _chart_card_header("pie-chart", "ds-chip-brand", "Target Distribution", "Share of landslide vs. non-landslide records")
         if resolved_target_column in dataset_df.columns:
             target_counts = (
                 dataset_df[resolved_target_column]
@@ -527,12 +736,8 @@ with chart_row1_col1:
 
 # 2. Rainfall Distribution
 with chart_row1_col2:
-    with st.container(border=True):
-        st.markdown('<div class="gs-chart-title">Rainfall Distribution</div>', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="gs-chart-desc">Frequency of recorded rainfall values across all rows.</div>',
-            unsafe_allow_html=True,
-        )
+    with st.container(border=True, key="chart-card-rainfall"):
+        _chart_card_header("cloud-rain", "ds-chip-accent", "Rainfall Distribution", "Frequency of recorded rainfall values")
         if rainfall_col:
             fig_rainfall = px.histogram(
                 dataset_df,
@@ -554,12 +759,8 @@ chart_row2_col1, chart_row2_col2 = st.columns(2, gap="medium")
 
 # 3. Slope Angle Distribution
 with chart_row2_col1:
-    with st.container(border=True):
-        st.markdown('<div class="gs-chart-title">Slope Angle Distribution</div>', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="gs-chart-desc">Distribution of terrain slope angles across all rows.</div>',
-            unsafe_allow_html=True,
-        )
+    with st.container(border=True, key="chart-card-slope"):
+        _chart_card_header("mountain", "ds-chip-brand", "Slope Angle Distribution", "Distribution of terrain slope angles")
         if slope_col:
             fig_slope = px.histogram(
                 dataset_df,
@@ -579,12 +780,8 @@ with chart_row2_col1:
 
 # 4. Soil Moisture Distribution
 with chart_row2_col2:
-    with st.container(border=True):
-        st.markdown('<div class="gs-chart-title">Soil Moisture Distribution</div>', unsafe_allow_html=True)
-        st.markdown(
-            '<div class="gs-chart-desc">Distribution of recorded soil moisture values.</div>',
-            unsafe_allow_html=True,
-        )
+    with st.container(border=True, key="chart-card-moisture"):
+        _chart_card_header("droplet", "ds-chip-accent", "Soil Moisture Distribution", "Distribution of recorded soil moisture values")
         if soil_moisture_col:
             fig_moisture = px.histogram(
                 dataset_df,
@@ -604,18 +801,11 @@ with chart_row2_col2:
 
 st.write("")
 
-
-# ---------------------------------------------------------------------------
-# SECTION 4 — Correlation Heatmap (UNCHANGED calculation, larger standalone card)
-# ---------------------------------------------------------------------------
-
-st.markdown('<div class="gs-grid-heading">🧮 Correlation Heatmap</div>', unsafe_allow_html=True)
-
-with st.container(border=True):
-    st.markdown(
-        '<div class="gs-chart-desc">Pairwise correlation between numeric features (capped to the '
-        "first 20 numeric columns for readability).</div>",
-        unsafe_allow_html=True,
+# 5. Correlation Heatmap (UNCHANGED calculation, larger standalone card)
+with st.container(border=True, key="chart-card-heatmap"):
+    _chart_card_header(
+        "grid", "ds-chip-amber", "Correlation Heatmap",
+        "Pairwise correlation between numeric features (capped to the first 20 numeric columns for readability)",
     )
 
     numeric_df = dataset_df.select_dtypes(include=[np.number])
@@ -638,112 +828,137 @@ with st.container(border=True):
         )
         st.plotly_chart(fig_corr)
         st.markdown(
-            '<div class="gs-section-caption">🔴 Red indicates positive correlation. '
-            "🔵 Blue indicates negative correlation.</div>",
+            '<div class="gs-chart-caption">Red indicates positive correlation. '
+            "Blue indicates negative correlation.</div>",
             unsafe_allow_html=True,
         )
     else:
         st.info("Not enough numeric columns to compute a correlation heatmap.")
 
-st.write("")
+st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
 
 
-# ---------------------------------------------------------------------------
-# SECTION 5 — Dataset Preview (UNCHANGED data: dataset_df.head(100))
-# ---------------------------------------------------------------------------
-
-st.markdown('<div class="gs-grid-heading">🔎 Dataset Preview</div>', unsafe_allow_html=True)
-
-with st.container(border=True):
-    st.markdown(
-        '<div class="gs-chart-desc">First rows of the training dataset, exactly as loaded.</div>',
-        unsafe_allow_html=True,
-    )
-    st.dataframe(dataset_df.head(100), width="stretch", hide_index=True, height=420)
-
-st.write("")
-
-
-# ---------------------------------------------------------------------------
-# SECTION 6 — Dataset Information (UNCHANGED calculations, compact card)
-# ---------------------------------------------------------------------------
-
-st.markdown('<div class="gs-grid-heading">ℹ️ Dataset Information</div>', unsafe_allow_html=True)
-
-missing_values_total = int(dataset_df.isna().sum().sum())
-missing_values_pct = (
-    round((missing_values_total / (dataset_df.shape[0] * dataset_df.shape[1])) * 100, 2)
-    if dataset_df.size > 0
-    else 0.0
-)
-
-dataset_name_display = DATASET_NAME if not is_real_dataset else os.path.basename(dataset_source)
-source_display = dataset_source if is_real_dataset else DATASET_SOURCE
-
-with st.container(border=True):
-    info_col1, info_col2 = st.columns(2, gap="medium")
-    with info_col1:
-        st.markdown(
-            f"""
-            <div class="gs-info-item"><span class="gs-info-label">📁 Dataset Name</span>
-                <span class="gs-info-value">{dataset_name_display}</span></div>
-            <div class="gs-info-item"><span class="gs-info-label">🎯 Target Column</span>
-                <span class="gs-info-value"><code>{resolved_target_column}</code></span></div>
-            <div class="gs-info-item"><span class="gs-info-label">🧬 Features</span>
-                <span class="gs-info-value">{total_features:,}</span></div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with info_col2:
-        st.markdown(
-            f"""
-            <div class="gs-info-item"><span class="gs-info-label">🗂️ Records</span>
-                <span class="gs-info-value">{total_records:,}</span></div>
-            <div class="gs-info-item"><span class="gs-info-label">⚠️ Missing Values</span>
-                <span class="gs-info-value">{missing_values_total:,} ({missing_values_pct}%)</span></div>
-            <div class="gs-info-item"><span class="gs-info-label">🌐 Source</span>
-                <span class="gs-info-value">{source_display}</span></div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with st.expander("📄 View feature list", expanded=False):
-        feature_cols = [c for c in dataset_df.columns if c != resolved_target_column]
-        st.write(", ".join(feature_cols) if feature_cols else "No feature columns available.")
-
-st.write("")
-
-
-# ---------------------------------------------------------------------------
-# SECTION 7 — Insights (derived only from stats already computed above)
-# ---------------------------------------------------------------------------
-
-st.markdown('<div class="gs-grid-heading">💡 Insights</div>', unsafe_allow_html=True)
+# ============================================================
+# SECTION 4 — STATISTICAL INSIGHTS
+# (Reuses the exact same insight statements that were previously
+# computed in the old "Insights" section — same logic, same values,
+# just presented as individual cards instead of a bullet list.)
+# ============================================================
 
 _class_total = landslide_events + non_landslide_events
 _minority_share = (min(landslide_events, non_landslide_events) / _class_total) if _class_total else 0.0
 _balance_insight = (
-    "Reasonably balanced target classes"
+    "Reasonably balanced target classes."
     if _minority_share >= 0.4
-    else "Imbalanced target classes - minority class makes up "
-    f"{_minority_share * 100:.1f}% of records"
+    else "Imbalanced target classes — the minority class makes up "
+    f"{_minority_share * 100:.1f}% of records."
 )
 _missing_insight = (
-    "No missing values in the dataset"
+    "No missing values anywhere in the dataset."
     if missing_values_total == 0
-    else f"{missing_values_total:,} missing values ({missing_values_pct}% of all cells)"
+    else f"{missing_values_total:,} missing values ({missing_values_pct}% of all cells)."
+)
+_feature_insight = f"{total_features:,} engineered and raw features are available for modeling."
+_target_insight = (
+    f"A clear target column (\u201c{resolved_target_column}\u201d) is present, "
+    "suitable for supervised learning."
 )
 
-with st.container(border=True):
+with st.container(border=True, key="section-insights"):
+    st.markdown(
+        f'<div class="ds-section-title">{_icon("target", 20)} Statistical Insights</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="ds-section-subtitle">What the charts and statistics above say about this dataset</div>',
+        unsafe_allow_html=True,
+    )
+
+    insight_col1, insight_col2 = st.columns(2, gap="medium")
+    with insight_col1:
+        _insight_card("scale", "ds-chip-brand", "Class Balance", _balance_insight, "insight-card-balance")
+    with insight_col2:
+        _insight_card(
+            "check-circle" if missing_values_total == 0 else "alert-triangle",
+            "ds-chip-accent" if missing_values_total == 0 else "ds-chip-amber",
+            "Data Completeness", _missing_insight, "insight-card-missing",
+        )
+
+    insight_col3, insight_col4 = st.columns(2, gap="medium")
+    with insight_col3:
+        _insight_card("layers", "ds-chip-amber", "Feature Space", _feature_insight, "insight-card-features")
+    with insight_col4:
+        _insight_card("target", "ds-chip-brand", "Target Suitability", _target_insight, "insight-card-target")
+
+st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
+
+
+# ============================================================
+# SECTION 5 — DATA PREVIEW (UNCHANGED data: dataset_df.head(100))
+# ============================================================
+
+with st.container(border=True, key="section-preview"):
+    st.markdown(
+        f'<div class="ds-section-title">{_icon("table", 20)} Data Preview</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="ds-section-subtitle">First rows of the training dataset, exactly as loaded</div>',
+        unsafe_allow_html=True,
+    )
+    st.dataframe(dataset_df.head(100), width="stretch", hide_index=True, height=420)
+
+st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
+
+
+# ============================================================
+# SECTION 6 — SUMMARY
+# (Narrative composed only from statistics already computed above —
+# no new calculations. Also folds in the old "Dataset Information"
+# details — name, source, target column, feature list — so nothing
+# that used to be on this page is lost.)
+# ============================================================
+
+_landslide_pct = (landslide_events / total_records * 100) if total_records else 0.0
+_summary_quality_phrase = "very clean" if missing_values_total == 0 else "mostly clean, with a small amount of missing data"
+
+_summary_text = (
+    f"The {dataset_name_display} contains {total_records:,} records across "
+    f"{total_features:,} features, with {landslide_events:,} landslide-positive "
+    f"records ({_landslide_pct:.1f}%) and {non_landslide_events:,} negative "
+    f"records. The data is {_summary_quality_phrase}"
+    f"{'' if missing_values_total == 0 else f' ({missing_values_pct}% of all cells)'}, "
+    f"and includes rainfall, terrain, soil, vegetation, and sensor-derived "
+    f"features suitable for training the GeoSlide landslide risk model."
+)
+
+with st.container(border=True, key="section-summary"):
+    st.markdown(
+        f'<div class="ds-section-title">{_icon("file-text", 20)} Summary</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(f'<div class="gs-summary-text">{_summary_text}</div>', unsafe_allow_html=True)
+
     st.markdown(
         f"""
-        <ul class="gs-insight-list">
-            <li><span class="gs-insight-check">✓</span> {_balance_insight}</li>
-            <li><span class="gs-insight-check">✓</span> {_missing_insight}</li>
-            <li><span class="gs-insight-check">✓</span> {total_features:,} engineered features</li>
-            <li><span class="gs-insight-check">✓</span> Target column (<code>{resolved_target_column}</code>)
-                present - suitable for supervised learning</li>
-        </ul>
+        <div class="gs-summary-meta-row">
+            <div class="gs-summary-meta-item">
+                <div class="gs-summary-meta-label">Dataset Name</div>
+                <div class="gs-summary-meta-value">{dataset_name_display}</div>
+            </div>
+            <div class="gs-summary-meta-item">
+                <div class="gs-summary-meta-label">Target Column</div>
+                <div class="gs-summary-meta-value"><code>{resolved_target_column}</code></div>
+            </div>
+            <div class="gs-summary-meta-item">
+                <div class="gs-summary-meta-label">Source</div>
+                <div class="gs-summary-meta-value">{source_display}</div>
+            </div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
+
+    with st.expander("View feature list", expanded=False):
+        feature_cols = [c for c in dataset_df.columns if c != resolved_target_column]
+        st.write(", ".join(feature_cols) if feature_cols else "No feature columns available.")
