@@ -78,6 +78,7 @@ st.set_page_config(
 
 ROOT = Path(__file__).resolve().parent.parent
 DESIGN_SYSTEM_CSS_FILE = ROOT / "assets" / "design_system.css"
+HERO_ILLUSTRATION_FILE = ROOT / "assets" / "images" / "prediction_ai_engine.png"
 
 
 # ---------------------------------------------------------------------------
@@ -305,10 +306,31 @@ PREDICTION_WIRING_CSS = """
 [data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] {
     background: var(--ds-surface) !important;
     border: 1px solid var(--gs-border-soft) !important;
+    border-style: solid !important;
     border-radius: var(--ds-radius-lg) !important;
     box-shadow: var(--gs-shadow-card) !important;
+    outline: none !important;
     transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base),
                 border-color var(--ds-transition-base), background var(--ds-transition-base);
+}
+/* Clean-border safety net — neutralizes any legacy/duplicate default
+   Streamlit border markup that would otherwise stack under the
+   custom border above and read as a rough, doubled outline. Purely
+   cosmetic: no size, spacing, or layout is touched. */
+[data-testid="stAppViewContainer"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] > div {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+[data-testid="stAppViewContainer"] button {
+    outline: none !important;
+    border-style: solid !important;
+}
+[data-testid="stAppViewContainer"] button:focus,
+[data-testid="stAppViewContainer"] button:focus-visible {
+    outline: none !important;
 }
 
 /* ============================================================
@@ -344,14 +366,14 @@ PREDICTION_WIRING_CSS = """
     line-height: 1.15 !important;
     margin: var(--ds-space-3) 0 0 !important;
 }
-.gs-hero-illo-wrap {
+[class*="st-key-hero-illo-wrap"] {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
     min-height: 180px;
 }
-.gs-hero-illo-wrap svg {
+[class*="st-key-hero-illo-wrap"] img {
     width: 100%;
     max-width: 240px;
     height: auto;
@@ -363,7 +385,7 @@ PREDICTION_WIRING_CSS = """
     50%      { transform: translateY(-10px); }
 }
 @media (prefers-reduced-motion: reduce) {
-    .gs-hero-illo-wrap svg { animation: none; }
+    [class*="st-key-hero-illo-wrap"] img { animation: none; }
 }
 
 /* ============================================================
@@ -597,6 +619,50 @@ PREDICTION_WIRING_CSS = """
     padding: 0.5rem 0.9rem !important;
     font-size: var(--ds-text-sm) !important;
     font-weight: var(--ds-weight-medium) !important;
+}
+/* Load Sample — soft emerald/green fill, white icon + text */
+[class*="st-key-load-sample-btn"] button {
+    background: linear-gradient(135deg, var(--ds-brand-500) 0%, var(--ds-brand-600) 100%) !important;
+    border: none !important;
+    box-shadow: 0 1px 2px rgba(20, 30, 24, 0.12), 0 8px 18px rgba(28, 68, 51, 0.18) !important;
+}
+[class*="st-key-load-sample-btn"] button p,
+[class*="st-key-load-sample-btn"] button div,
+[class*="st-key-load-sample-btn"] button span,
+[class*="st-key-load-sample-btn"] button svg {
+    color: var(--ds-text-inverse) !important;
+    fill: var(--ds-text-inverse) !important;
+    opacity: 1 !important;
+}
+[class*="st-key-load-sample-btn"] button:hover {
+    background: linear-gradient(135deg, var(--ds-brand-600) 0%, var(--ds-brand-700) 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(20, 30, 24, 0.16), 0 12px 24px rgba(28, 68, 51, 0.24) !important;
+}
+[class*="st-key-load-sample-btn"] button:active {
+    transform: translateY(0);
+}
+/* Reset — soft red fill, white icon + text */
+[class*="st-key-reset-btn"] button {
+    background: linear-gradient(135deg, var(--ds-error-500) 0%, var(--ds-error-600) 100%) !important;
+    border: none !important;
+    box-shadow: 0 1px 2px rgba(30, 18, 16, 0.12), 0 8px 18px rgba(147, 46, 34, 0.20) !important;
+}
+[class*="st-key-reset-btn"] button p,
+[class*="st-key-reset-btn"] button div,
+[class*="st-key-reset-btn"] button span,
+[class*="st-key-reset-btn"] button svg {
+    color: var(--ds-text-inverse) !important;
+    fill: var(--ds-text-inverse) !important;
+    opacity: 1 !important;
+}
+[class*="st-key-reset-btn"] button:hover {
+    background: linear-gradient(135deg, var(--ds-error-600) 0%, #7a2519 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(30, 18, 16, 0.18), 0 12px 24px rgba(147, 46, 34, 0.26) !important;
+}
+[class*="st-key-reset-btn"] button:active {
+    transform: translateY(0);
 }
 .gs-secondary-actions-label {
     text-align: center;
@@ -881,7 +947,8 @@ with st.container(border=True, key="section-hero"):
         )
 
     with right:
-        st.markdown(f'<div class="gs-hero-illo-wrap">{_hero_illustration()}</div>', unsafe_allow_html=True)
+        with st.container(key="hero-illo-wrap"):
+            st.image(str(HERO_ILLUSTRATION_FILE), use_container_width=True)
 
 st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
 
@@ -982,9 +1049,21 @@ with st.container(border=True, key="section-actions"):
 
     sec_pad_l, sec_col1, sec_col2, sec_pad_r = st.columns([2, 1, 1, 2], gap="small")
     with sec_col1:
-        st.button("Load Sample", use_container_width=True, on_click=_load_sample_data, key="load-sample-btn")
+        st.button(
+            "Load Sample",
+            icon=":material/bolt:",
+            use_container_width=True,
+            on_click=_load_sample_data,
+            key="load-sample-btn",
+        )
     with sec_col2:
-        st.button("Reset", use_container_width=True, on_click=_reset_form, key="reset-btn")
+        st.button(
+            "Reset",
+            icon=":material/refresh:",
+            use_container_width=True,
+            on_click=_reset_form,
+            key="reset-btn",
+        )
 
     st.markdown(
         '<div class="gs-actions-hint">Results appear below once the backend responds.</div>',

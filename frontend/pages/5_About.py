@@ -67,6 +67,7 @@ st.set_page_config(
 
 ROOT = Path(__file__).resolve().parent.parent
 DESIGN_SYSTEM_CSS_FILE = ROOT / "assets" / "design_system.css"
+HERO_ILLUSTRATION_FILE = ROOT / "assets" / "images" / "geoslide_ecosystem.png"
 
 
 # ---------------------------------------------------------------------------
@@ -110,10 +111,31 @@ ABOUT_WIRING_CSS = """
 [data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] {
     background: var(--ds-surface) !important;
     border: 1px solid var(--ds-border) !important;
+    border-style: solid !important;
     border-radius: var(--ds-radius-lg) !important;
     box-shadow: var(--ds-shadow-sm) !important;
+    outline: none !important;
     transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base),
                 border-color var(--ds-transition-base), background var(--ds-transition-base);
+}
+/* Clean-border safety net — neutralizes any legacy/duplicate default
+   Streamlit border markup that would otherwise stack under the
+   custom border above and read as a rough, doubled outline. Purely
+   cosmetic: no size, spacing, or layout is touched. */
+[data-testid="stAppViewContainer"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] > div {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+[data-testid="stAppViewContainer"] button {
+    outline: none !important;
+    border-style: solid !important;
+}
+[data-testid="stAppViewContainer"] button:focus,
+[data-testid="stAppViewContainer"] button:focus-visible {
+    outline: none !important;
 }
 
 /* ============================================================
@@ -148,14 +170,14 @@ ABOUT_WIRING_CSS = """
     line-height: 1.15 !important;
     margin: var(--ds-space-3) 0 0 !important;
 }
-.gs-hero-illo-wrap {
+[class*="st-key-hero-illo-wrap"] {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
     min-height: 180px;
 }
-.gs-hero-illo-wrap svg {
+[class*="st-key-hero-illo-wrap"] img {
     width: 100%;
     max-width: 230px;
     height: auto;
@@ -167,7 +189,7 @@ ABOUT_WIRING_CSS = """
     50%      { transform: translateY(-10px); }
 }
 @media (prefers-reduced-motion: reduce) {
-    .gs-hero-illo-wrap svg { animation: none; }
+    [class*="st-key-hero-illo-wrap"] img { animation: none; }
 }
 
 /* ============================================================
@@ -226,6 +248,37 @@ ABOUT_WIRING_CSS = """
 [data-testid="stLayoutWrapper"]:has(> [class*="st-key-section-techstack"]) {
     background: var(--ds-surface) !important;
     padding: var(--ds-space-7) var(--ds-space-6) !important;
+}
+.gs-tech-row { display: flex; flex-wrap: wrap; gap: var(--ds-space-3); margin-top: var(--ds-space-1); }
+.gs-tech-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ds-space-3);
+    background: var(--ds-surface);
+    border: 1px solid var(--ds-border);
+    border-radius: var(--ds-radius-md);
+    padding: var(--ds-space-2) var(--ds-space-4) var(--ds-space-2) var(--ds-space-2);
+    box-shadow: var(--ds-shadow-sm);
+    transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base), border-color var(--ds-transition-base);
+}
+.gs-tech-chip:hover {
+    transform: var(--ds-lift-hover);
+    box-shadow: var(--ds-shadow-hover);
+    border-color: var(--ds-brand-200);
+}
+.gs-tech-chip-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--ds-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.gs-tech-chip-name {
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-weight-semibold);
+    color: var(--ds-text-primary);
 }
 
 /* ============================================================
@@ -423,15 +476,15 @@ def _pipeline_row_html(steps) -> str:
 
 
 def _badge_row(items) -> None:
+    chip_classes = ["ds-chip-brand", "ds-chip-accent", "ds-chip-amber"]
     spans = "".join(
-        f'<span class="ds-badge ds-badge-neutral" style="display:inline-flex;align-items:center;gap:6px;">'
-        f'{_icon(icon, 14, 2)}<span>{name}</span></span>'
-        for icon, name in items
+        f'<span class="gs-tech-chip">'
+        f'<span class="gs-tech-chip-icon {chip_classes[i % len(chip_classes)]}">{_icon(icon, 15)}</span>'
+        f'<span class="gs-tech-chip-name">{name}</span>'
+        f'</span>'
+        for i, (icon, name) in enumerate(items)
     )
-    st.markdown(
-        f'<div style="display:flex;flex-wrap:wrap;gap:var(--ds-space-3);margin-top:var(--ds-space-1);">{spans}</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown(f'<div class="gs-tech-row">{spans}</div>', unsafe_allow_html=True)
 
 
 def _roadmap_card(icon: str, chip_class: str, title: str, desc: str, key: str) -> None:
@@ -468,17 +521,18 @@ with st.container(border=True, key="section-hero"):
         st.markdown(
             """
             <div class="ds-body-lg gs-hero-copy">
-            GeoSlide is an explainable AI system for landslide risk assessment — it
-            predicts risk from environmental and geological data, and uses SHAP to
-            show exactly why each prediction was made, all in one interactive
-            dashboard.
+            GeoSlide AI is a Machine Learning-based landslide risk assessment
+            platform that combines geospatial intelligence, environmental
+            analytics, explainable AI, and interactive visualizations to
+            support smarter landslide risk analysis.
             </div>
             """,
             unsafe_allow_html=True,
         )
 
     with right:
-        st.markdown(f'<div class="gs-hero-illo-wrap">{_hero_illustration()}</div>', unsafe_allow_html=True)
+        with st.container(key="hero-illo-wrap"):
+            st.image(str(HERO_ILLUSTRATION_FILE), use_container_width=True)
 
 st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
 
