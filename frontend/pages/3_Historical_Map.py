@@ -93,7 +93,6 @@ st.set_page_config(
 
 ROOT = Path(__file__).resolve().parent.parent
 DESIGN_SYSTEM_CSS_FILE = ROOT / "assets" / "design_system.css"
-HERO_ILLUSTRATION_FILE = ROOT / "assets" / "images" / "historical_map_globe.png"
 
 
 # ---------------------------------------------------------------------------
@@ -324,31 +323,10 @@ MAP_WIRING_CSS = """
 [data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] {
     background: var(--ds-surface) !important;
     border: 1px solid var(--gs-border-soft) !important;
-    border-style: solid !important;
     border-radius: var(--ds-radius-lg) !important;
     box-shadow: var(--gs-shadow-card) !important;
-    outline: none !important;
     transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base),
                 border-color var(--ds-transition-base), background var(--ds-transition-base);
-}
-/* Clean-border safety net — neutralizes any legacy/duplicate default
-   Streamlit border markup that would otherwise stack under the
-   custom border above and read as a rough, doubled outline. Purely
-   cosmetic: no size, spacing, or layout is touched. */
-[data-testid="stAppViewContainer"] [data-testid="stVerticalBlockBorderWrapper"],
-[data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] > div {
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-    background: transparent !important;
-}
-[data-testid="stAppViewContainer"] button {
-    outline: none !important;
-    border-style: solid !important;
-}
-[data-testid="stAppViewContainer"] button:focus,
-[data-testid="stAppViewContainer"] button:focus-visible {
-    outline: none !important;
 }
 
 /* ============================================================
@@ -383,14 +361,14 @@ MAP_WIRING_CSS = """
     line-height: 1.15 !important;
     margin: var(--ds-space-3) 0 0 !important;
 }
-[class*="st-key-hero-illo-wrap"] {
+.gs-hero-illo-wrap {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
     min-height: 180px;
 }
-[class*="st-key-hero-illo-wrap"] img {
+.gs-hero-illo-wrap svg {
     width: 100%;
     max-width: 230px;
     height: auto;
@@ -402,7 +380,7 @@ MAP_WIRING_CSS = """
     50%      { transform: translateY(-10px); }
 }
 @media (prefers-reduced-motion: reduce) {
-    [class*="st-key-hero-illo-wrap"] img { animation: none; }
+    .gs-hero-illo-wrap svg { animation: none; }
 }
 
 /* ============================================================
@@ -645,7 +623,7 @@ with st.container(border=True, key="section-hero"):
 
     with left:
         st.markdown(
-            f'<div class="ds-eyebrow">{_icon("globe", 14, 2)}<span>&nbsp;GLOBAL LANDSLIDE INTELLIGENCE</span></div>',
+            f'<div class="ds-eyebrow">{_icon("globe", 14, 2)}<span>&nbsp;GEOSPATIAL INTELLIGENCE</span></div>',
             unsafe_allow_html=True,
         )
         st.markdown(
@@ -655,9 +633,9 @@ with st.container(border=True, key="section-hero"):
         st.markdown(
             """
             <div class="ds-body-lg gs-hero-copy">
-            Explore historical landslide events from NASA's Global Landslide Catalog.
-            Analyze geographic distribution, event locations, and historical patterns
-            through an interactive geospatial dashboard.
+            Explore historical landslide events from the NASA Global Landslide Catalog
+            using interactive filters and geospatial visualization. Filter by country,
+            year, and trigger, then click any marker for full event details.
             </div>
             """,
             unsafe_allow_html=True,
@@ -676,8 +654,7 @@ with st.container(border=True, key="section-hero"):
             )
 
     with right:
-        with st.container(key="hero-illo-wrap"):
-            st.image(str(HERO_ILLUSTRATION_FILE), use_container_width=True)
+        st.markdown(f'<div class="gs-hero-illo-wrap">{_hero_illustration()}</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
 
