@@ -77,6 +77,7 @@ st.set_page_config(
 
 ROOT = Path(__file__).resolve().parent.parent
 DESIGN_SYSTEM_CSS_FILE = ROOT / "assets" / "design_system.css"
+HERO_ILLUSTRATION_FILE = ROOT / "assets" / "images" / "shap_explainability.png"
 
 
 # ---------------------------------------------------------------------------
@@ -212,10 +213,31 @@ SHAP_WIRING_CSS = """
 [data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] {
     background: var(--ds-surface) !important;
     border: 1px solid var(--gs-border-soft) !important;
+    border-style: solid !important;
     border-radius: var(--ds-radius-lg) !important;
     box-shadow: var(--gs-shadow-card) !important;
+    outline: none !important;
     transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base),
                 border-color var(--ds-transition-base), background var(--ds-transition-base);
+}
+/* Clean-border safety net — neutralizes any legacy/duplicate default
+   Streamlit border markup that would otherwise stack under the
+   custom border above and read as a rough, doubled outline. Purely
+   cosmetic: no size, spacing, or layout is touched. */
+[data-testid="stAppViewContainer"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] > div {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+[data-testid="stAppViewContainer"] button {
+    outline: none !important;
+    border-style: solid !important;
+}
+[data-testid="stAppViewContainer"] button:focus,
+[data-testid="stAppViewContainer"] button:focus-visible {
+    outline: none !important;
 }
 
 /* ============================================================
@@ -251,14 +273,14 @@ SHAP_WIRING_CSS = """
     line-height: 1.15 !important;
     margin: var(--ds-space-3) 0 0 !important;
 }
-.gs-hero-illo-wrap {
+[class*="st-key-hero-illo-wrap"] {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
     min-height: 180px;
 }
-.gs-hero-illo-wrap svg {
+[class*="st-key-hero-illo-wrap"] img {
     width: 100%;
     max-width: 230px;
     height: auto;
@@ -270,7 +292,7 @@ SHAP_WIRING_CSS = """
     50%      { transform: translateY(-10px); }
 }
 @media (prefers-reduced-motion: reduce) {
-    .gs-hero-illo-wrap svg { animation: none; }
+    [class*="st-key-hero-illo-wrap"] img { animation: none; }
 }
 
 /* ============================================================
@@ -362,6 +384,7 @@ SHAP_WIRING_CSS = """
 /* ============================================================
    SECTION 5 — FEATURE CONTRIBUTIONS
    ============================================================ */
+.ds-chip-error { background: var(--ds-error-50); color: var(--ds-error-600); }
 [data-testid="stLayoutWrapper"]:has(> [class*="st-key-contrib-card-"]) {
     background: var(--ds-surface) !important;
     padding: var(--ds-space-6) !important;
@@ -523,26 +546,28 @@ with st.container(border=True, key="section-hero"):
 
     with left:
         st.markdown(
-            f'<div class="ds-eyebrow">{_icon("brain", 14, 2)}<span>&nbsp;EXPLAINABLE AI</span></div>',
+            f'<div class="ds-eyebrow">{_icon("brain", 14, 2)}<span>&nbsp;AI EXPLAINABILITY</span></div>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            '<div class="ds-display gs-display-md">Model Explainability</div>',
+            '<div class="ds-display gs-display-md">Understand Every Prediction</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
             """
             <div class="ds-body-lg gs-hero-copy">
-            SHAP (SHapley Additive exPlanations) shows why the model made a given
-            landslide risk prediction — which features mattered most overall, and
-            which ones pushed this specific prediction higher or lower.
+            GeoSlide uses SHAP (SHapley Additive exPlanations) to explain every
+            prediction. Explore feature importance, positive and negative
+            contributors, and understand exactly why the AI estimated the
+            landslide risk.
             </div>
             """,
             unsafe_allow_html=True,
         )
 
     with right:
-        st.markdown(f'<div class="gs-hero-illo-wrap">{_hero_illustration()}</div>', unsafe_allow_html=True)
+        with st.container(key="hero-illo-wrap"):
+            st.image(str(HERO_ILLUSTRATION_FILE), use_container_width=True)
 
 st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
 
@@ -746,7 +771,7 @@ with st.container(border=True, key="section-contributions"):
             st.markdown(
                 f"""
                 <div class="gs-contrib-heading">
-                    <div class="ds-kpi-icon ds-chip-amber" style="width:36px;height:36px;margin-bottom:0;">{_icon("trending-up", 16)}</div>
+                    <div class="ds-kpi-icon ds-chip-brand" style="width:36px;height:36px;margin-bottom:0;">{_icon("trending-up", 16)}</div>
                     <div class="gs-contrib-title">Positive Contributors</div>
                 </div>
                 <div class="gs-contrib-subcaption">Features pushing this prediction toward higher risk.</div>
@@ -764,7 +789,7 @@ with st.container(border=True, key="section-contributions"):
                     rows += f"""
                     <div class="gs-contrib-row">
                         <div class="gs-contrib-feature">{item["feature"]}</div>
-                        <div class="gs-contrib-value ds-badge-error">+{item["impact"]:.2f}</div>
+                        <div class="gs-contrib-value ds-badge-success">+{item["impact"]:.2f}</div>
                     </div>
                     """
                 st.markdown(rows, unsafe_allow_html=True)
@@ -774,7 +799,7 @@ with st.container(border=True, key="section-contributions"):
             st.markdown(
                 f"""
                 <div class="gs-contrib-heading">
-                    <div class="ds-kpi-icon ds-chip-brand" style="width:36px;height:36px;margin-bottom:0;">{_icon("trending-down", 16)}</div>
+                    <div class="ds-kpi-icon ds-chip-error" style="width:36px;height:36px;margin-bottom:0;">{_icon("alert-triangle", 16)}</div>
                     <div class="gs-contrib-title">Negative Contributors</div>
                 </div>
                 <div class="gs-contrib-subcaption">Features pushing this prediction toward lower risk.</div>
@@ -792,7 +817,7 @@ with st.container(border=True, key="section-contributions"):
                     rows += f"""
                     <div class="gs-contrib-row">
                         <div class="gs-contrib-feature">{item["feature"]}</div>
-                        <div class="gs-contrib-value ds-badge-success">{item["impact"]:.2f}</div>
+                        <div class="gs-contrib-value ds-badge-error">{item["impact"]:.2f}</div>
                     </div>
                     """
                 st.markdown(rows, unsafe_allow_html=True)
