@@ -33,6 +33,20 @@ NOT changed (verified untouched):
     and the `api.predict()` call itself (same function body).
   - Error handling branches and messages.
   - Navigation, sidebar, and every other page's files.
+
+Polish pass (presentation only, on top of the above):
+  - Input widgets restyled (custom borders/focus/hover, no default
+    Streamlit chrome) — same st.number_input/st.selectbox calls,
+    same keys, same min/max/step/options.
+  - The old single wide "Environment" card was split into two
+    balanced cards — "Environment & Vegetation" and "Sensor
+    Monitoring" — same fields, same keys, just regrouped.
+  - Predict is now the visually dominant action; Load Sample/Reset
+    are smaller secondary actions underneath. Same on_click callbacks.
+  - Result card redesigned around a large centered risk badge +
+    confidence figure. Same data, same fields read from the response.
+  - Model Info converted into three individual KPI-style cards using
+    the same `.ds-kpi-*` classes Home.py's KPI row uses. Same facts.
 """
 
 from pathlib import Path
@@ -247,13 +261,20 @@ st.markdown(f"<style>{DESIGN_SYSTEM_CSS_FILE.read_text(encoding='utf-8')}</style
 # ---------------------------------------------------------------------------
 # Page wiring CSS — maps Streamlit's native container markup onto the
 # existing design-system tokens/classes, the same way Home.py's
-# HOME_WIRING_CSS does. No new colors, sizes, radii, or spacing values
-# are declared; every rule resolves through var(--ds-*).
+# HOME_WIRING_CSS does. Colors/shadows/radii resolve through var(--ds-*)
+# tokens or small rgba refinements of those same tokens — no layout,
+# spacing, or component positions change here.
 # ---------------------------------------------------------------------------
 
 PREDICTION_WIRING_CSS = """
 [data-testid="stAppViewContainer"] {
     background: var(--ds-bg) !important;
+    /* Softer, less visible borders + layered elevation shadows used
+       throughout this page's cards — component-quality polish only. */
+    --gs-border-soft: rgba(28, 35, 31, 0.07);
+    --gs-border-soft-strong: rgba(28, 35, 31, 0.12);
+    --gs-shadow-card: 0 1px 2px rgba(28, 35, 31, 0.04), 0 6px 16px rgba(28, 35, 31, 0.05);
+    --gs-shadow-card-hover: 0 2px 6px rgba(28, 35, 31, 0.05), 0 16px 34px rgba(28, 35, 31, 0.09);
 }
 
 [data-testid="stAppViewContainer"] .block-container {
@@ -283,9 +304,9 @@ PREDICTION_WIRING_CSS = """
    ============================================================ */
 [data-testid="stAppViewContainer"] [data-testid="stLayoutWrapper"] {
     background: var(--ds-surface) !important;
-    border: 1px solid var(--ds-border) !important;
+    border: 1px solid var(--gs-border-soft) !important;
     border-radius: var(--ds-radius-lg) !important;
-    box-shadow: var(--ds-shadow-sm) !important;
+    box-shadow: var(--gs-shadow-card) !important;
     transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base),
                 border-color var(--ds-transition-base), background var(--ds-transition-base);
 }
@@ -297,7 +318,7 @@ PREDICTION_WIRING_CSS = """
    ============================================================ */
 [data-testid="stLayoutWrapper"]:has(> [class*="st-key-section-"]) {
     background: var(--ds-bg-subtle) !important;
-    border: 1px solid var(--ds-border) !important;
+    border: 1px solid var(--gs-border-soft) !important;
     box-shadow: var(--ds-shadow-xs) !important;
     padding: var(--ds-space-7) var(--ds-space-6) !important;
 }
@@ -362,19 +383,20 @@ PREDICTION_WIRING_CSS = """
     align-items: center;
     gap: var(--ds-space-3);
     background: var(--ds-surface);
-    border: 1px solid var(--ds-border);
+    border: 1px solid var(--gs-border-soft);
     border-radius: var(--ds-radius-md);
     padding: var(--ds-space-4);
+    box-shadow: var(--gs-shadow-card);
     transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base), border-color var(--ds-transition-base);
 }
 .gs-progress-step:hover {
     transform: translateY(-3px);
-    border-color: var(--ds-brand-200);
-    box-shadow: var(--ds-shadow-md);
+    border-color: var(--ds-brand-100);
+    box-shadow: var(--gs-shadow-card-hover);
 }
 .gs-progress-step.gs-progress-final {
     background: linear-gradient(90deg, var(--ds-brand-50) 0%, var(--ds-surface) 100%);
-    border-color: var(--ds-brand-200);
+    border-color: var(--ds-brand-100);
 }
 .gs-progress-index {
     width: 30px; height: 30px; border-radius: var(--ds-radius-full);
@@ -399,8 +421,8 @@ PREDICTION_WIRING_CSS = """
     padding: var(--ds-space-6) !important;
 }
 [data-testid="stLayoutWrapper"]:has(> [class*="st-key-field-card-"]):hover {
-    border-color: var(--ds-brand-200) !important;
-    box-shadow: var(--ds-shadow-md) !important;
+    border-color: var(--gs-border-soft-strong) !important;
+    box-shadow: var(--gs-shadow-card-hover) !important;
 }
 .gs-field-card-header {
     display: flex;
@@ -411,22 +433,82 @@ PREDICTION_WIRING_CSS = """
 .gs-field-card-title { font-size: var(--ds-text-h3); font-weight: var(--ds-weight-semibold); color: var(--ds-text-primary); }
 .gs-field-card-desc { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); margin-top: 1px; }
 
-/* Number inputs / selects — light, scoped, matches design_system inputs */
-[data-testid="stAppViewContainer"] [data-testid="stNumberInput"] input,
-[data-testid="stAppViewContainer"] [data-testid="stSelectbox"] > div {
-    background: var(--ds-bg-inset) !important;
-    color: var(--ds-text-primary) !important;
-    border-radius: var(--ds-radius-sm) !important;
-    border: 1px solid var(--ds-border) !important;
+/* Number inputs / selects — a single unified control surface, no
+   default Streamlit chrome. overflow:hidden makes the input field and
+   its stepper buttons read as one component with rounded outer
+   corners instead of three separately-bordered pieces. */
+[data-testid="stAppViewContainer"] [data-testid="stNumberInput"],
+[data-testid="stAppViewContainer"] [data-testid="stSelectbox"] {
+    margin-bottom: 2px;
 }
-[data-testid="stAppViewContainer"] [data-testid="stNumberInput"] input:focus {
+[data-testid="stAppViewContainer"] [data-testid="stNumberInputContainer"],
+[data-testid="stAppViewContainer"] [data-testid="stSelectbox"] > div > div {
+    background: var(--ds-bg-inset) !important;
+    border: 1px solid var(--gs-border-soft-strong) !important;
+    border-radius: var(--ds-radius-md) !important;
+    box-shadow: inset 0 1px 2px rgba(28, 35, 31, 0.03) !important;
+    overflow: hidden;
+    transition: border-color var(--ds-transition-fast), box-shadow var(--ds-transition-fast), background var(--ds-transition-fast);
+}
+[data-testid="stAppViewContainer"] [data-testid="stNumberInputContainer"]:hover,
+[data-testid="stAppViewContainer"] [data-testid="stSelectbox"] > div > div:hover {
+    border-color: var(--ds-brand-200) !important;
+    background: var(--ds-surface) !important;
+}
+[data-testid="stAppViewContainer"] [data-testid="stNumberInputContainer"]:focus-within,
+[data-testid="stAppViewContainer"] [data-testid="stSelectbox"] > div > div:focus-within {
     border-color: var(--ds-border-focus) !important;
     box-shadow: var(--ds-shadow-focus) !important;
+    background: var(--ds-surface) !important;
+}
+[data-testid="stAppViewContainer"] [data-testid="stNumberInput"] input,
+[data-testid="stAppViewContainer"] [data-testid="stSelectbox"] input,
+[data-testid="stAppViewContainer"] [data-testid="stSelectbox"] > div > div > div {
+    background: transparent !important;
+    color: var(--ds-text-primary) !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-weight: var(--ds-weight-semibold);
+    font-size: var(--ds-text-sm) !important;
+}
+[data-testid="stAppViewContainer"] [data-testid="stSelectbox"] > div > div {
+    padding-left: 2px !important;
+}
+/* Cleaner dropdown arrow, recolored to match the rest of the inputs */
+[data-testid="stAppViewContainer"] [data-testid="stSelectbox"] svg {
+    fill: var(--ds-text-tertiary) !important;
+    color: var(--ds-text-tertiary) !important;
+    width: 16px;
+    height: 16px;
+}
+/* Step +/- buttons — a soft internal hairline (not a hard border)
+   keeps them feeling like part of the same control rather than a
+   bolted-on widget. */
+[data-testid="stAppViewContainer"] [data-testid="stNumberInputStepDown"],
+[data-testid="stAppViewContainer"] [data-testid="stNumberInputStepUp"] {
+    background: transparent !important;
+    color: var(--ds-text-tertiary) !important;
+    border: none !important;
+    border-left: 1px solid var(--gs-border-soft) !important;
+    border-radius: 0 !important;
+    transition: background var(--ds-transition-fast), color var(--ds-transition-fast);
+}
+[data-testid="stAppViewContainer"] [data-testid="stNumberInputStepDown"]:hover,
+[data-testid="stAppViewContainer"] [data-testid="stNumberInputStepUp"]:hover {
+    background: var(--ds-brand-50) !important;
+    color: var(--ds-brand-600) !important;
+}
+[data-testid="stAppViewContainer"] [data-testid="stNumberInputStepDown"] svg,
+[data-testid="stAppViewContainer"] [data-testid="stNumberInputStepUp"] svg {
+    width: 14px;
+    height: 14px;
 }
 [data-testid="stAppViewContainer"] label p {
-    color: var(--ds-text-secondary) !important;
+    color: var(--ds-text-tertiary) !important;
     font-size: var(--ds-text-xs) !important;
-    font-weight: var(--ds-weight-semibold);
+    font-weight: var(--ds-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: var(--ds-tracking-wide);
 }
 
 /* ============================================================
@@ -441,33 +523,90 @@ PREDICTION_WIRING_CSS = """
     border-radius: var(--ds-radius-full) !important;
     font-weight: var(--ds-weight-semibold);
     font-family: var(--ds-font-base);
-    transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base), filter var(--ds-transition-base);
+    outline: none !important;
+    transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base), background var(--ds-transition-base), border-color var(--ds-transition-base);
 }
+/* Secondary — a single, consistent 1px hairline instead of the
+   default browser/Streamlit button border, with a quiet fill-based
+   hover instead of just a color-changing outline. */
 [data-testid="stAppViewContainer"] button[kind="secondary"] {
     background: var(--ds-surface) !important;
-    border: 1px solid var(--ds-border) !important;
-    color: var(--ds-text-primary) !important;
-    box-shadow: var(--ds-shadow-xs) !important;
+    border: 1px solid var(--gs-border-soft-strong) !important;
+    color: var(--ds-text-secondary) !important;
+    box-shadow: none !important;
+}
+[data-testid="stAppViewContainer"] button[kind="secondary"] p,
+[data-testid="stAppViewContainer"] button[kind="secondary"] div {
+    color: var(--ds-text-secondary) !important;
 }
 [data-testid="stAppViewContainer"] button[kind="secondary"]:hover {
-    border-color: var(--ds-brand-300) !important;
+    background: var(--ds-bg-subtle) !important;
+    border-color: var(--ds-border-strong) !important;
+    color: var(--ds-text-primary) !important;
     transform: var(--ds-lift-hover);
-    box-shadow: var(--ds-shadow-sm) !important;
+    box-shadow: var(--gs-shadow-card) !important;
 }
+[data-testid="stAppViewContainer"] button[kind="secondary"]:hover p,
+[data-testid="stAppViewContainer"] button[kind="secondary"]:hover div {
+    color: var(--ds-text-primary) !important;
+}
+[data-testid="stAppViewContainer"] button[kind="secondary"]:active {
+    transform: translateY(0);
+    background: var(--ds-bg-inset) !important;
+}
+[data-testid="stAppViewContainer"] button[kind="secondary"]:focus-visible {
+    box-shadow: var(--ds-shadow-focus) !important;
+}
+/* Predict — the single dominant call to action on this page. Solid,
+   saturated fill (not a washed-out light tint), bright white label
+   text explicitly forced onto every inner element, and a soft diffuse
+   shadow rather than a hard, over-saturated one. */
 [data-testid="stAppViewContainer"] button[kind="primary"] {
-    background: linear-gradient(90deg, var(--ds-brand-500) 0%, var(--ds-brand-600) 100%) !important;
+    background: linear-gradient(135deg, var(--ds-brand-500) 0%, var(--ds-brand-700) 100%) !important;
     border: none !important;
     color: var(--ds-text-inverse) !important;
-    font-size: 1.02rem;
-    padding: 0.9rem 1.2rem !important;
-    box-shadow: var(--ds-shadow-sm) !important;
+    font-size: 1.2rem !important;
+    font-weight: var(--ds-weight-bold) !important;
+    letter-spacing: 0.01em;
+    padding: 1.1rem 1.5rem !important;
+    box-shadow: 0 1px 2px rgba(20, 30, 24, 0.15), 0 14px 28px rgba(28, 68, 51, 0.24) !important;
+}
+[data-testid="stAppViewContainer"] button[kind="primary"] p,
+[data-testid="stAppViewContainer"] button[kind="primary"] div,
+[data-testid="stAppViewContainer"] button[kind="primary"] span {
+    color: var(--ds-text-inverse) !important;
+    opacity: 1 !important;
 }
 [data-testid="stAppViewContainer"] button[kind="primary"]:hover {
-    filter: brightness(1.05);
-    transform: var(--ds-lift-hover);
-    box-shadow: 0 14px 28px rgba(47, 107, 79, 0.28) !important;
+    background: linear-gradient(135deg, var(--ds-brand-600) 0%, var(--ds-brand-700) 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(20, 30, 24, 0.18), 0 20px 38px rgba(28, 68, 51, 0.30) !important;
 }
-.gs-actions-hint { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); margin-top: var(--ds-space-3); }
+[data-testid="stAppViewContainer"] button[kind="primary"]:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(20, 30, 24, 0.15), 0 8px 18px rgba(28, 68, 51, 0.22) !important;
+}
+[data-testid="stAppViewContainer"] button[kind="primary"]:focus-visible {
+    box-shadow: 0 0 0 3px rgba(47, 107, 79, 0.28), 0 14px 28px rgba(28, 68, 51, 0.24) !important;
+}
+/* Load Sample / Reset — deliberately smaller & quieter than Predict,
+   same single-hairline pill treatment as the rest of the secondary
+   buttons above. */
+[class*="st-key-load-sample-btn"] button,
+[class*="st-key-reset-btn"] button {
+    padding: 0.5rem 0.9rem !important;
+    font-size: var(--ds-text-sm) !important;
+    font-weight: var(--ds-weight-medium) !important;
+}
+.gs-secondary-actions-label {
+    text-align: center;
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: var(--ds-tracking-wide);
+    margin: var(--ds-space-4) 0 var(--ds-space-2);
+}
+.gs-actions-hint { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); margin-top: var(--ds-space-4); }
 
 /* ============================================================
    SECTION 5 — RESULT CARD
@@ -476,30 +615,54 @@ PREDICTION_WIRING_CSS = """
     background: var(--ds-surface) !important;
     padding: var(--ds-space-7) var(--ds-space-6) !important;
 }
+/* Large centered hero block: risk badge + big confidence figure */
+.gs-result-hero {
+    text-align: center;
+    padding: var(--ds-space-3) 0 var(--ds-space-5);
+}
 .gs-risk-badge {
     display: inline-block;
-    padding: 7px 18px;
+    padding: 9px 24px;
     border-radius: var(--ds-radius-full);
-    font-size: 1.05rem;
+    font-size: 1.25rem;
     font-weight: var(--ds-weight-extrabold);
     letter-spacing: 0.01em;
+    box-shadow: var(--ds-shadow-sm);
 }
-.gs-result-status { font-size: var(--ds-text-body); color: var(--ds-text-secondary); margin-top: var(--ds-space-3); }
+.gs-result-confidence-value {
+    font-size: 3.4rem;
+    font-weight: var(--ds-weight-extrabold);
+    color: var(--ds-text-primary);
+    line-height: 1;
+    margin-top: var(--ds-space-4);
+    font-variant-numeric: tabular-nums;
+}
+.gs-result-confidence-caption {
+    font-size: var(--ds-text-sm);
+    font-weight: var(--ds-weight-semibold);
+    color: var(--ds-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: var(--ds-tracking-wide);
+    margin-top: var(--ds-space-2);
+}
+.gs-result-status { font-size: var(--ds-text-sm); color: var(--ds-text-tertiary); margin-top: var(--ds-space-2); }
 .gs-result-summary {
     font-size: var(--ds-text-body-lg);
     color: var(--ds-text-primary);
     line-height: var(--ds-leading-normal);
-    margin-top: var(--ds-space-2);
+    text-align: center;
+    max-width: 640px;
+    margin: var(--ds-space-4) auto 0;
 }
 .gs-recommend-box {
     display: flex;
     gap: var(--ds-space-3);
     align-items: flex-start;
     background: var(--ds-bg-subtle);
-    border: 1px solid var(--ds-border);
+    border: 1px solid var(--gs-border-soft-strong);
     border-radius: var(--ds-radius-md);
     padding: var(--ds-space-4);
-    margin-top: var(--ds-space-4);
+    margin-top: var(--ds-space-5);
 }
 .gs-recommend-title { font-size: var(--ds-text-sm); font-weight: var(--ds-weight-bold); color: var(--ds-text-primary); }
 .gs-recommend-text { font-size: var(--ds-text-sm); color: var(--ds-text-secondary); margin-top: 2px; }
@@ -535,15 +698,29 @@ PREDICTION_WIRING_CSS = """
 .gs-metric-value { font-size: 1.3rem; font-weight: var(--ds-weight-extrabold); color: var(--ds-text-primary); margin-top: 2px; }
 
 /* ============================================================
-   SECTION 6 — MODEL INFO
+   SECTION 6 — MODEL INFO (KPI-style cards, same tokens/classes as
+   Home.py's KPI row: .ds-kpi-icon / .ds-chip-*)
    ============================================================ */
 [data-testid="stLayoutWrapper"]:has(> [class*="st-key-section-modelinfo"]) {
     background: var(--ds-bg-subtle) !important;
-    padding: var(--ds-space-5) var(--ds-space-6) !important;
+    padding: var(--ds-space-6) !important;
 }
-.gs-modelinfo-row { display: flex; align-items: center; gap: var(--ds-space-3); }
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-modelinfo-kpi-"]) {
+    background: var(--ds-surface) !important;
+    text-align: center;
+    padding: var(--ds-space-5) !important;
+}
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-modelinfo-kpi-"]):hover {
+    transform: translateY(-3px);
+    border-color: var(--ds-brand-200) !important;
+    box-shadow: var(--ds-shadow-md) !important;
+}
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-modelinfo-kpi-"]) .ds-kpi-icon {
+    margin: 0 auto var(--ds-space-3);
+}
 .gs-modelinfo-label { font-size: var(--ds-text-xs); font-weight: var(--ds-weight-bold); text-transform: uppercase; letter-spacing: var(--ds-tracking-wide); color: var(--ds-text-tertiary); }
-.gs-modelinfo-value { font-size: var(--ds-text-sm); font-weight: var(--ds-weight-semibold); color: var(--ds-text-primary); margin-top: 1px; }
+.gs-modelinfo-value { font-size: 1.05rem; font-weight: var(--ds-weight-extrabold); color: var(--ds-text-primary); margin-top: 4px; }
+.gs-modelinfo-desc { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); margin-top: 2px; }
 """
 
 st.markdown(f"<style>{PREDICTION_WIRING_CSS}</style>", unsafe_allow_html=True)
@@ -728,8 +905,8 @@ st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
 
 
 # ============================================================
-# SECTION 3 — INPUT FORM (five cards; same fields/keys as before,
-# only the visual grouping is new)
+# SECTION 3 — INPUT FORM (six balanced cards; same fields/keys as
+# before, only the visual grouping is new)
 # ============================================================
 
 st.markdown(
@@ -762,14 +939,16 @@ with row2_right:
         _field_card_header("cloud-rain", "ds-chip-accent", "Weather", "Rainfall & atmosphere")
         _render_numeric_fields(WEATHER_FIELDS, columns=1)
 
-with st.container(border=True, key="field-card-environment"):
-    _field_card_header("leaf", "ds-chip-amber", "Environment", "Vegetation, geology & sensors")
-    env_left, env_right = st.columns(2, gap="medium")
-    with env_left:
+row3_left, row3_right = st.columns(2, gap="medium")
+with row3_left:
+    with st.container(border=True, key="field-card-environment"):
+        _field_card_header("leaf", "ds-chip-amber", "Environment & Vegetation", "Cover, land use & activity")
         _render_numeric_fields(VEGETATION_NUMERIC_FIELDS, columns=1)
         st.selectbox("Land Use", options=LAND_USE_OPTIONS, key="land_use")
         _render_numeric_fields(GEOLOGICAL_FIELDS, columns=1)
-    with env_right:
+with row3_right:
+    with st.container(border=True, key="field-card-sensors"):
+        _field_card_header("cpu", "ds-chip-amber", "Sensor Monitoring", "Microseismic & strain readings")
         _render_numeric_fields(SENSOR_FIELDS, columns=1)
 
 st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
@@ -788,18 +967,24 @@ with st.container(border=True, key="section-actions"):
         unsafe_allow_html=True,
     )
 
-    btn_col1, btn_col2, btn_col3 = st.columns([1, 2, 1], gap="medium")
-
-    with btn_col1:
-        st.button("Load Sample", use_container_width=True, on_click=_load_sample_data)
-
-    with btn_col2:
-        if st.button("Predict Landslide Risk", type="primary", use_container_width=True, key="predict-btn"):
+    predict_pad_l, predict_col, predict_pad_r = st.columns([1, 3, 1], gap="medium")
+    with predict_col:
+        if st.button(
+            "Predict Landslide Risk",
+            type="primary",
+            use_container_width=True,
+            key="predict-btn",
+        ):
             with st.spinner("Analyzing terrain, hydrology, and environmental signals…"):
                 _predict_landslide_risk()
 
-    with btn_col3:
-        st.button("Reset", use_container_width=True, on_click=_reset_form)
+    st.markdown('<div class="gs-secondary-actions-label">or</div>', unsafe_allow_html=True)
+
+    sec_pad_l, sec_col1, sec_col2, sec_pad_r = st.columns([2, 1, 1, 2], gap="small")
+    with sec_col1:
+        st.button("Load Sample", use_container_width=True, on_click=_load_sample_data, key="load-sample-btn")
+    with sec_col2:
+        st.button("Reset", use_container_width=True, on_click=_reset_form, key="reset-btn")
 
     st.markdown(
         '<div class="gs-actions-hint">Results appear below once the backend responds.</div>',
@@ -916,22 +1101,27 @@ with st.container(border=True, key="section-result"):
         verdict = _format_prediction(prediction)
         probability_text = _format_probability(probability)
 
+        summary_text = _RISK_SUMMARY.get(risk_level)
+
         st.markdown(
-            f'<span class="gs-risk-badge" style="background-color:{color};color:#ffffff;">{risk_level} Risk</span>',
+            f"""
+            <div class="gs-result-hero">
+                <span class="gs-risk-badge" style="background-color:{color};color:#ffffff;">{risk_level} Risk</span>
+                <div class="gs-result-confidence-value">{probability_text}</div>
+                <div class="gs-result-confidence-caption">Model Confidence</div>
+                <div class="gs-result-status">Prediction status: <b>{verdict}</b></div>
+                {f'<div class="gs-result-summary">{summary_text}</div>' if summary_text else ''}
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        st.markdown(f'<div class="gs-result-status">Prediction status: <b>{verdict}</b></div>', unsafe_allow_html=True)
 
-        summary_text = _RISK_SUMMARY.get(risk_level)
-        if summary_text:
-            st.markdown(f'<div class="gs-result-summary">{summary_text}</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="gs-confidence-label">Confidence</div>', unsafe_allow_html=True)
-        try:
-            st.progress(float(probability))
-        except (TypeError, ValueError):
-            st.progress(0.0)
-        st.markdown(f'<div class="gs-confidence-label">Model confidence: <b>{probability_text}</b></div>', unsafe_allow_html=True)
+        conf_pad_l, conf_col, conf_pad_r = st.columns([1, 3, 1], gap="medium")
+        with conf_col:
+            try:
+                st.progress(float(probability))
+            except (TypeError, ValueError):
+                st.progress(0.0)
 
         action_text = _RISK_ACTION.get(risk_level)
         if action_text:
@@ -996,43 +1186,23 @@ with st.container(border=True, key="section-modelinfo"):
         f'<div class="ds-section-title">{_icon("cpu", 18)} Model Info</div>',
         unsafe_allow_html=True,
     )
+
+    _MODEL_INFO_KPIS = [
+        ("cpu", "ds-chip-brand", "Algorithm", "K-Nearest Neighbors", "k = 5, Minkowski metric", "modelinfo-kpi-algorithm"),
+        ("layers", "ds-chip-accent", "Features", "34 engineered inputs", "Raw + encoded categoricals", "modelinfo-kpi-features"),
+        ("brain", "ds-chip-amber", "Explainability", "SHAP", "via Random Forest TreeExplainer", "modelinfo-kpi-explainability"),
+    ]
+
     mi1, mi2, mi3 = st.columns(3, gap="medium")
-    with mi1:
-        st.markdown(
-            f"""
-            <div class="gs-modelinfo-row">
-                <div class="ds-kpi-icon ds-chip-brand" style="width:36px;height:36px;margin-bottom:0;">{_icon("cpu", 16)}</div>
-                <div>
-                    <div class="gs-modelinfo-label">Algorithm</div>
-                    <div class="gs-modelinfo-value">K-Nearest Neighbors (k=5)</div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with mi2:
-        st.markdown(
-            f"""
-            <div class="gs-modelinfo-row">
-                <div class="ds-kpi-icon ds-chip-accent" style="width:36px;height:36px;margin-bottom:0;">{_icon("layers", 16)}</div>
-                <div>
-                    <div class="gs-modelinfo-label">Features</div>
-                    <div class="gs-modelinfo-value">34 engineered inputs</div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with mi3:
-        st.markdown(
-            f"""
-            <div class="gs-modelinfo-row">
-                <div class="ds-kpi-icon ds-chip-amber" style="width:36px;height:36px;margin-bottom:0;">{_icon("brain", 16)}</div>
-                <div>
-                    <div class="gs-modelinfo-label">Explainability</div>
-                    <div class="gs-modelinfo-value">SHAP via Random Forest</div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    for col, (icon, chip_class, label, value, desc, key) in zip((mi1, mi2, mi3), _MODEL_INFO_KPIS):
+        with col:
+            with st.container(border=True, key=key):
+                st.markdown(
+                    f"""
+                    <div class="ds-kpi-icon {chip_class}" style="width:42px;height:42px;">{_icon(icon, 18)}</div>
+                    <div class="gs-modelinfo-label">{label}</div>
+                    <div class="gs-modelinfo-value">{value}</div>
+                    <div class="gs-modelinfo-desc">{desc}</div>
+                    """,
+                    unsafe_allow_html=True,
+                )
