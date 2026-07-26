@@ -13,7 +13,7 @@ COLORS = {
     "card": "#ffffff",
     "text": "#22313f",
     "muted": "#64748b",
-    "border": "#dfe6ea",
+    "border": "rgba(15, 23, 42, 0.05)",
 }
 
 FONTS = {

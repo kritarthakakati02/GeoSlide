@@ -40,8 +40,8 @@
   --ds-bg-inset:        #ECE8E1;  /* input fields, table header band */
   --ds-surface:         #FFFFFF;  /* card / panel surface */
   --ds-surface-raised:  #FFFFFF;  /* modal / popover — same fill, deeper shadow */
-  --ds-border:          #E6E1D8;  /* default hairline border */
-  --ds-border-strong:   #D6CFC1;  /* emphasized border / divider */
+  --ds-border:          rgba(15, 23, 42, 0.05);  /* whisper-light border — cards float on shadow, not outline */
+  --ds-border-strong:   rgba(15, 23, 42, 0.08);  /* emphasized border / divider — still soft */
   --ds-border-focus:    #2F6B4F;  /* focus outline color */
 
   /* ---- Text scale ---- */
@@ -65,6 +65,13 @@
   --ds-accent-100:  #CBE2ED;
   --ds-accent-500:  #2D7DA9;
   --ds-accent-600:  #24657F;
+
+  /* ---- Violet accent (third hero CTA only — kept muted, same family
+     construction as brand/accent so it reads as intentional, not neon) ---- */
+  --ds-violet-50:   #F0ECF7;
+  --ds-violet-100:  #DED2ED;
+  --ds-violet-500:  #7C5DA8;
+  --ds-violet-600:  #634A8A;
 
   /* ---- Tertiary accent (sparing use — highlights, tech badges) ---- */
   --ds-amber-50:   #FBF3E2;

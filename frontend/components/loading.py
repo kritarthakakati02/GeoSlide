@@ -42,7 +42,7 @@ def loading_section(message: str = "Loading...") -> None:
             <div style="
                 width:40px;
                 height:40px;
-                border:4px solid {THEME['border']};
+                border:4px solid rgba(15, 23, 42, 0.10);
                 border-top:4px solid {THEME['primary']};
                 border-radius:50%;
                 animation: geoslide-spin 0.8s linear infinite;

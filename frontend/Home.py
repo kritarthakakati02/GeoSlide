@@ -191,40 +191,51 @@ HOME_WIRING_CSS = """
     }
 }
 
-/* ---- CTA pills (primary + secondary): equal height, full width,
-   pill shape, centered, no clipped text, gentle hover brighten ---- */
-[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-primary"]) {
-    background: linear-gradient(90deg, var(--ds-brand-500) 0%, var(--ds-brand-600) 100%) !important;
+/* ---- CTA pills: ALL THREE share one premium filled-button design —
+   same height, radius, padding, and shadow shape. Only the fill color
+   (and its matching hover-shadow tint) changes per action, so nothing
+   here reads as a lesser/outlined "secondary" button. ---- */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-primary"]),
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-secondary-0"]),
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-secondary-1"]) {
     border: none !important;
     border-radius: var(--ds-radius-full) !important;
     box-shadow: var(--ds-shadow-sm) !important;
     padding: 0 !important;
     overflow: visible !important;
+    transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base), filter var(--ds-transition-base);
+}
+/* Start Prediction — emerald */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-primary"]) {
+    background: linear-gradient(90deg, var(--ds-brand-500) 0%, var(--ds-brand-600) 100%) !important;
 }
 [data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-primary"]):hover {
     transform: var(--ds-lift-hover);
-    box-shadow: 0 14px 28px rgba(47, 107, 79, 0.28) !important;
+    box-shadow: 0 14px 28px rgba(47, 107, 79, 0.30) !important;
     filter: brightness(1.05);
 }
-[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-primary"]) .stPageLink p {
-    color: var(--ds-text-inverse) !important;
+/* Explore Dataset — violet */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-secondary-0"]) {
+    background: linear-gradient(90deg, var(--ds-violet-500) 0%, var(--ds-violet-600) 100%) !important;
 }
-[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-secondary"]) {
-    background: var(--ds-surface) !important;
-    border: 1px solid var(--ds-border) !important;
-    border-radius: var(--ds-radius-full) !important;
-    box-shadow: var(--ds-shadow-xs) !important;
-    padding: 0 !important;
-    overflow: visible !important;
-}
-[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-secondary"]):hover {
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-secondary-0"]):hover {
     transform: var(--ds-lift-hover);
-    border-color: var(--ds-brand-300) !important;
-    box-shadow: var(--ds-shadow-sm) !important;
-    background: var(--ds-bg-subtle) !important;
+    box-shadow: 0 14px 28px rgba(124, 93, 168, 0.30) !important;
+    filter: brightness(1.05);
 }
+/* Historical Map — blue */
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-secondary-1"]) {
+    background: linear-gradient(90deg, var(--ds-accent-500) 0%, var(--ds-accent-600) 100%) !important;
+}
+[data-testid="stLayoutWrapper"]:has(> [class*="st-key-cta-secondary-1"]):hover {
+    transform: var(--ds-lift-hover);
+    box-shadow: 0 14px 28px rgba(45, 125, 169, 0.30) !important;
+    filter: brightness(1.05);
+}
+/* Shared geometry + inverse (white) text/icon for all three fills */
 [class*="st-key-cta-primary"] .stPageLink,
-[class*="st-key-cta-secondary"] .stPageLink {
+[class*="st-key-cta-secondary-0"] .stPageLink,
+[class*="st-key-cta-secondary-1"] .stPageLink {
     display: flex !important;
     align-items: center;
     justify-content: center;
@@ -234,7 +245,9 @@ HOME_WIRING_CSS = """
     box-sizing: border-box;
 }
 [class*="st-key-cta-primary"] .stPageLink p,
-[class*="st-key-cta-secondary"] .stPageLink p {
+[class*="st-key-cta-secondary-0"] .stPageLink p,
+[class*="st-key-cta-secondary-1"] .stPageLink p {
+    color: var(--ds-text-inverse) !important;
     font-size: 0.88rem !important;
     white-space: nowrap !important;
     overflow: visible !important;
@@ -242,7 +255,9 @@ HOME_WIRING_CSS = """
     margin: 0 !important;
 }
 [class*="st-key-cta-primary"] [data-testid="stIconMaterial"],
-[class*="st-key-cta-secondary"] [data-testid="stIconMaterial"] {
+[class*="st-key-cta-secondary-0"] [data-testid="stIconMaterial"],
+[class*="st-key-cta-secondary-1"] [data-testid="stIconMaterial"] {
+    color: var(--ds-text-inverse) !important;
     font-size: 1.05rem !important;
 }
 

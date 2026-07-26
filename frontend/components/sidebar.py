@@ -52,7 +52,7 @@ NAV_GROUPS = [
 _SIDEBAR_CSS = """
 [data-testid="stSidebar"] {
     background: #FFFFFF;
-    border-right: 1px solid #E6E1D8;
+    border-right: 1px solid rgba(15, 23, 42, 0.06);
     box-shadow: 3px 0 18px rgba(28, 35, 31, 0.05);
     padding: 1.1rem 0.85rem 1rem;
 }
@@ -70,7 +70,8 @@ _SIDEBAR_CSS = """
     align-items: center;
     gap: 0.7rem;
     background: #F7F5F2;
-    border: 1px solid #E6E1D8;
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
     border-radius: 14px;
     padding: 0.8rem 0.85rem;
     margin-bottom: 1.35rem;
@@ -163,7 +164,7 @@ _SIDEBAR_CSS = """
 .sidebar-footer {
     margin-top: auto;
     padding: 0.9rem 0.65rem 0.1rem;
-    border-top: 1px solid #E6E1D8;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
 }
 .sidebar-footer [data-testid="stCaptionContainer"] p {
     font-size: 0.71rem !important;
