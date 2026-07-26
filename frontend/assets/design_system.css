@@ -719,6 +719,82 @@
 
 
 /* ==========================================================================
+   21. AI SYSTEM STATUS PANEL
+   ==========================================================================
+   Compact glass-style status card used under hero descriptions to fill
+   leftover whitespace. Purely additive/decorative — does not affect
+   hero layout, height, or the hero illustration.
+   ========================================================================== */
+.gs-status-panel {
+  display: inline-block;
+  min-width: 280px;
+  max-width: 340px;
+  width: 100%;
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-xs);
+  padding: var(--ds-space-4) var(--ds-space-5);
+  margin-top: var(--ds-space-5);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.gs-status-panel:hover {
+  box-shadow: var(--ds-shadow-sm);
+  transform: translateY(-1px);
+}
+.gs-status-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ds-text-tertiary);
+  margin-bottom: var(--ds-space-2);
+}
+.gs-status-panel-title svg { color: var(--ds-brand-500); }
+.gs-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-3);
+  padding: 7px 0;
+}
+.gs-status-row + .gs-status-row {
+  border-top: 1px solid var(--ds-border);
+}
+.gs-status-label {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  font-size: var(--ds-text-sm);
+  color: var(--ds-text-secondary);
+  font-weight: var(--ds-weight-medium);
+}
+.gs-status-dot {
+  width: 7px;
+  height: 7px;
+  min-width: 7px;
+  border-radius: 50%;
+  background: var(--ds-success-500);
+  box-shadow: 0 0 0 3px var(--ds-success-50);
+}
+.gs-status-value {
+  font-size: var(--ds-text-xs);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-success-600);
+  background: var(--ds-success-50);
+  padding: 2px 9px;
+  border-radius: var(--ds-radius-full);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .gs-status-panel { max-width: 100%; }
+}
+
+
+/* ==========================================================================
    20. RESPONSIVE RULES
    ========================================================================== */
 @media (max-width: 1024px) {

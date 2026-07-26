@@ -59,6 +59,7 @@ import pandas as pd
 import streamlit as st
 
 from components.sidebar import render_sidebar
+from components.status_panel import render_status_panel
 from utils import api
 from utils.constants import RISK_LEVEL_COLORS
 from utils.helpers import FORM_FIELD_TO_FEATURE_NAME, encode_land_use, encode_soil_type
@@ -563,6 +564,15 @@ with st.container(border=True, key="section-hero"):
             </div>
             """,
             unsafe_allow_html=True,
+        )
+        render_status_panel(
+            _icon("brain", 14, 2),
+            [
+                ("SHAP Engine", "Active"),
+                ("Feature Attribution", "Ready"),
+                ("Local Explanations", "Enabled"),
+                ("Model Transparency", "Online"),
+            ],
         )
 
     with right:

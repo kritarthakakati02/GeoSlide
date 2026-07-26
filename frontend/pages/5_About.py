@@ -52,6 +52,7 @@ from pathlib import Path
 import streamlit as st
 
 from components.sidebar import render_sidebar
+from components.status_panel import render_status_panel
 from utils.theme import load_styles
 
 
@@ -528,6 +529,15 @@ with st.container(border=True, key="section-hero"):
             </div>
             """,
             unsafe_allow_html=True,
+        )
+        render_status_panel(
+            _icon("cpu", 14, 2),
+            [
+                ("Machine Learning", "Integrated"),
+                ("Explainable AI", "Enabled"),
+                ("Geospatial Intelligence", "Active"),
+                ("Dashboard System", "Operational"),
+            ],
         )
 
     with right:

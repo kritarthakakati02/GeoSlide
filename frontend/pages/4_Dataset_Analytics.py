@@ -67,6 +67,7 @@ import plotly.express as px
 import streamlit as st
 
 from components.sidebar import render_sidebar
+from components.status_panel import render_status_panel
 from utils.theme import load_styles
 
 
@@ -677,6 +678,15 @@ with st.container(border=True, key="section-hero"):
                 """,
                 unsafe_allow_html=True,
             )
+        render_status_panel(
+            _icon("database", 14, 2),
+            [
+                ("Dataset", "Loaded"),
+                ("Statistical Analysis", "Ready"),
+                ("Visualizations", "Active"),
+                ("Correlation Engine", "Online"),
+            ],
+        )
 
     with right:
         with st.container(key="hero-illo-wrap"):

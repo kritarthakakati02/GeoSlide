@@ -78,6 +78,7 @@ import folium
 from streamlit_folium import st_folium
 
 from components.sidebar import render_sidebar
+from components.status_panel import render_status_panel
 from utils.theme import load_styles
 
 
@@ -674,6 +675,15 @@ with st.container(border=True, key="section-hero"):
                 """,
                 unsafe_allow_html=True,
             )
+        render_status_panel(
+            _icon("activity", 14, 2),
+            [
+                ("NASA Dataset", "Loaded"),
+                ("GIS Mapping", "Active"),
+                ("Historical Events", "Available"),
+                ("Interactive Filters", "Ready"),
+            ],
+        )
 
     with right:
         with st.container(key="hero-illo-wrap"):
