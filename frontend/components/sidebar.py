@@ -43,16 +43,20 @@ NAV_ITEMS = [
 # correct regardless of which page renders it.
 _SIDEBAR_CSS = """
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #F9FBFA 0%, #F3F7F5 100%);
+    background: linear-gradient(180deg, #EAF3EE 0%, #DCEBE2 100%) !important;
     border-right: 1px solid rgba(15, 23, 42, 0.12);
     box-shadow: 3px 0 18px rgba(28, 35, 31, 0.05);
     padding: 0.9rem 0.75rem 0.85rem;
+}
+[data-testid="stSidebar"] > div {
+    background: transparent !important;
 }
 [data-testid="stSidebar"] [data-testid="stSidebarContent"] {
     padding-top: 0.1rem;
     display: flex;
     flex-direction: column;
     min-height: 100%;
+    background: transparent !important;
 }
 [data-testid="stSidebar"] hr { display: none; }
 
@@ -110,17 +114,18 @@ _SIDEBAR_CSS = """
 .nav-item {
     border-radius: 10px;
     position: relative;
-    overflow: hidden;
 }
 
 .nav-item [data-testid="stPageLink"],
 .nav-item a.stPageLink {
     border-radius: 10px !important;
+    background: transparent !important;
     transition: background-color 160ms ease, color 160ms ease;
 }
 .nav-item [data-testid="stPageLink"] > div,
 .nav-item a.stPageLink {
     padding: 0.48rem 0.6rem !important;
+    background: transparent !important;
 }
 .nav-item [data-testid="stPageLink"] p,
 .nav-item [data-testid="stPageLink"] span {
@@ -130,27 +135,34 @@ _SIDEBAR_CSS = """
     transition: color 160ms ease;
 }
 .nav-item [data-testid="stPageLink"] [data-testid="stIconMaterial"] {
-    color: #4B564F !important;
+    color: #000000 !important;
     font-size: 19px !important;
     transition: color 160ms ease;
 }
-.nav-item [data-testid="stPageLink"]:hover,
-.nav-item a.stPageLink:hover {
+.nav-item:hover {
     background: rgba(47, 107, 79, 0.16) !important;
 }
-.nav-item [data-testid="stPageLink"]:hover p,
-.nav-item [data-testid="stPageLink"]:hover span,
-.nav-item [data-testid="stPageLink"]:hover [data-testid="stIconMaterial"] {
+.nav-item:hover [data-testid="stPageLink"] p,
+.nav-item:hover [data-testid="stPageLink"] span {
     color: #2F6B4F !important;
+}
+.nav-item:hover [data-testid="stPageLink"] [data-testid="stIconMaterial"] {
+    color: #000000 !important;
 }
 
 .nav-item.active {
-    box-shadow: inset 4px 0 0 rgba(255, 255, 255, 0.9);
-}
-.nav-item.active [data-testid="stPageLink"],
-.nav-item.active a.stPageLink {
     background: linear-gradient(135deg, #2F6B4F 0%, #25553F 100%) !important;
-    box-shadow: 0 8px 22px rgba(28, 68, 51, 0.38), 0 2px 6px rgba(28, 68, 51, 0.24);
+    box-shadow: inset 4px 0 0 rgba(255, 255, 255, 0.9),
+                0 8px 22px rgba(28, 68, 51, 0.38), 0 2px 6px rgba(28, 68, 51, 0.24);
+}
+/* Strip any background Streamlit itself paints on inner wrappers for the
+   "current page" indicator, and any lingering hover tint from above, so
+   the emerald gradient on .nav-item (the div this file renders and fully
+   controls) is always what's visible — never covered by an inner layer. */
+.nav-item.active [data-testid="stPageLink"],
+.nav-item.active [data-testid="stPageLink"] > div,
+.nav-item.active a.stPageLink {
+    background: transparent !important;
 }
 .nav-item.active [data-testid="stPageLink"] p,
 .nav-item.active [data-testid="stPageLink"] span {
@@ -158,16 +170,17 @@ _SIDEBAR_CSS = """
     font-weight: 700 !important;
 }
 .nav-item.active [data-testid="stPageLink"] [data-testid="stIconMaterial"] {
-    color: #FFFFFF !important;
+    color: #000000 !important;
 }
-.nav-item.active [data-testid="stPageLink"]:hover,
-.nav-item.active a.stPageLink:hover {
+.nav-item.active:hover {
     background: linear-gradient(135deg, #2F6B4F 0%, #25553F 100%) !important;
 }
-.nav-item.active [data-testid="stPageLink"]:hover p,
-.nav-item.active [data-testid="stPageLink"]:hover span,
-.nav-item.active [data-testid="stPageLink"]:hover [data-testid="stIconMaterial"] {
+.nav-item.active:hover [data-testid="stPageLink"] p,
+.nav-item.active:hover [data-testid="stPageLink"] span {
     color: #FFFFFF !important;
+}
+.nav-item.active:hover [data-testid="stPageLink"] [data-testid="stIconMaterial"] {
+    color: #000000 !important;
 }
 
 /* ---- Footer ---- */
