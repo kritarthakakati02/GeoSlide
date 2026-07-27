@@ -43,8 +43,8 @@ NAV_ITEMS = [
 # correct regardless of which page renders it.
 _SIDEBAR_CSS = """
 [data-testid="stSidebar"] {
-    background: #FFFFFF;
-    border-right: 1px solid rgba(15, 23, 42, 0.06);
+    background: linear-gradient(180deg, #F9FBFA 0%, #F3F7F5 100%);
+    border-right: 1px solid rgba(15, 23, 42, 0.12);
     box-shadow: 3px 0 18px rgba(28, 35, 31, 0.05);
     padding: 0.9rem 0.75rem 0.85rem;
 }
@@ -71,13 +71,13 @@ _SIDEBAR_CSS = """
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 0.65rem 0.5rem 0.9rem;
-    margin-bottom: 0.5rem;
+    padding: 1rem 0.5rem 1.3rem;
+    margin-bottom: 0.75rem;
     border-bottom: 1px solid rgba(15, 23, 42, 0.06);
 }
 .sidebar-brand-logo-img {
-    width: 68px;
-    height: 68px;
+    width: 82px;
+    height: 82px;
     border-radius: 50%;
     object-fit: cover;
     box-shadow: 0 6px 16px rgba(28, 68, 51, 0.28), 0 1px 3px rgba(15, 23, 42, 0.10);
@@ -88,7 +88,7 @@ _SIDEBAR_CSS = """
     font-weight: 800;
     color: #1C231F;
     letter-spacing: -0.01em;
-    margin-top: 0.6rem;
+    margin-top: 0.85rem;
     line-height: 1.2;
 }
 .sidebar-brand-tagline {
@@ -96,7 +96,7 @@ _SIDEBAR_CSS = """
     font-weight: 500;
     color: #8C8779;
     letter-spacing: 0.02em;
-    margin-top: 0.2rem;
+    margin-top: 0.3rem;
     line-height: 1.3;
 }
 
@@ -123,19 +123,20 @@ _SIDEBAR_CSS = """
     padding: 0.48rem 0.6rem !important;
 }
 .nav-item [data-testid="stPageLink"] p,
-.nav-item [data-testid="stPageLink"] span,
-.nav-item [data-testid="stPageLink"] [data-testid="stIconMaterial"] {
+.nav-item [data-testid="stPageLink"] span {
     color: #4B564F !important;
-    font-weight: 500 !important;
-    font-size: 0.86rem;
+    font-weight: 700 !important;
+    font-size: 0.95rem;
     transition: color 160ms ease;
 }
 .nav-item [data-testid="stPageLink"] [data-testid="stIconMaterial"] {
+    color: #4B564F !important;
     font-size: 19px !important;
+    transition: color 160ms ease;
 }
 .nav-item [data-testid="stPageLink"]:hover,
 .nav-item a.stPageLink:hover {
-    background: rgba(47, 107, 79, 0.08) !important;
+    background: rgba(47, 107, 79, 0.16) !important;
 }
 .nav-item [data-testid="stPageLink"]:hover p,
 .nav-item [data-testid="stPageLink"]:hover span,
@@ -144,22 +145,24 @@ _SIDEBAR_CSS = """
 }
 
 .nav-item.active {
-    box-shadow: inset 3px 0 0 rgba(255, 255, 255, 0.55);
+    box-shadow: inset 4px 0 0 rgba(255, 255, 255, 0.9);
 }
 .nav-item.active [data-testid="stPageLink"],
 .nav-item.active a.stPageLink {
-    background: linear-gradient(135deg, #2F6B4F 0%, #1C4433 100%) !important;
-    box-shadow: 0 4px 12px rgba(28, 68, 51, 0.22);
+    background: linear-gradient(135deg, #2F6B4F 0%, #25553F 100%) !important;
+    box-shadow: 0 8px 22px rgba(28, 68, 51, 0.38), 0 2px 6px rgba(28, 68, 51, 0.24);
 }
 .nav-item.active [data-testid="stPageLink"] p,
-.nav-item.active [data-testid="stPageLink"] span,
+.nav-item.active [data-testid="stPageLink"] span {
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+}
 .nav-item.active [data-testid="stPageLink"] [data-testid="stIconMaterial"] {
     color: #FFFFFF !important;
-    font-weight: 600 !important;
 }
 .nav-item.active [data-testid="stPageLink"]:hover,
 .nav-item.active a.stPageLink:hover {
-    background: linear-gradient(135deg, #2F6B4F 0%, #1C4433 100%) !important;
+    background: linear-gradient(135deg, #2F6B4F 0%, #25553F 100%) !important;
 }
 .nav-item.active [data-testid="stPageLink"]:hover p,
 .nav-item.active [data-testid="stPageLink"]:hover span,
@@ -192,6 +195,7 @@ _SIDEBAR_CSS = """
 .sidebar-status-version {
     font-size: 0.68rem;
     color: #ABA595;
+    opacity: 0.55;
     margin-top: 0.25rem;
 }
 """
