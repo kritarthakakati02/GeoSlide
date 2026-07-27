@@ -86,6 +86,7 @@ HERO_ILLUSTRATION_FILE = ROOT / "assets" / "images" / "shap_explainability.png"
 # ---------------------------------------------------------------------------
 
 st.session_state.setdefault("shap_explanation", None)
+st.session_state.setdefault("prediction_loaded", False)
 
 
 def _get_current_feature_payload() -> dict:
@@ -104,7 +105,28 @@ def _get_current_feature_payload() -> dict:
 
 
 def _load_latest_prediction() -> None:
-    """Load a real SHAP explainability breakdown for the most recent prediction."""
+    """
+    Pull the most recent prediction result into this page (from the
+    shared session_state written by the Prediction page). This step only
+    loads/refreshes the Prediction Summary above — it does not call the
+    SHAP backend. Use the "SHAP Analysis" button to generate the
+    explanation for whatever prediction is currently loaded.
+    """
+    prediction_result = st.session_state.get("prediction_result")
+
+    if not prediction_result or prediction_result.get("status") != "success":
+        st.session_state["prediction_loaded"] = False
+        st.session_state["shap_explanation"] = None
+        return
+
+    st.session_state["prediction_loaded"] = True
+    # Clear any previous explanation so a stale SHAP breakdown from an
+    # earlier prediction isn't shown next to a newly loaded one.
+    st.session_state["shap_explanation"] = None
+
+
+def _run_shap_analysis() -> None:
+    """Generate the SHAP explainability breakdown for the currently loaded prediction."""
     prediction_result = st.session_state.get("prediction_result")
 
     if not prediction_result or prediction_result.get("status") != "success":
@@ -140,6 +162,17 @@ def _load_latest_prediction() -> None:
         }
 
     st.session_state["shap_explanation"] = explanation
+
+
+# Auto-load the latest prediction when the page opens, if one already
+# exists in session_state (e.g. the user already ran a prediction on the
+# Prediction page). This only populates the Prediction Summary section —
+# it intentionally does NOT auto-run the SHAP analysis; that still
+# requires clicking "SHAP Analysis" below.
+if st.session_state.get("prediction_result") and not st.session_state.get("prediction_loaded"):
+    _load_latest_prediction()
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -588,14 +621,28 @@ st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
 
 with st.container(border=True, key="section-actions"):
     st.button("Load Latest Prediction", type="primary", on_click=_load_latest_prediction, icon=":material/download:")
+    st.button(
+        "SHAP Analysis",
+        type="primary",
+        on_click=_run_shap_analysis,
+        disabled=not st.session_state.get("prediction_loaded", False),
+        icon=":material/psychology:",
+    )
 
     explanation = st.session_state.get("shap_explanation")
     if explanation is None:
-        st.markdown(
-            '<div class="gs-actions-hint">No SHAP data loaded yet. Click <b>Load Latest '
-            "Prediction</b> above to view an explainability breakdown.</div>",
-            unsafe_allow_html=True,
-        )
+        if st.session_state.get("prediction_loaded"):
+            st.markdown(
+                '<div class="gs-actions-hint">Prediction loaded. Click <b>SHAP Analysis</b> '
+                "above to generate the explainability breakdown.</div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                '<div class="gs-actions-hint">No SHAP data loaded yet. Click <b>Load Latest '
+                "Prediction</b> above to view an explainability breakdown.</div>",
+                unsafe_allow_html=True,
+            )
         if st.session_state.get("prediction_result") is None:
             st.markdown(
                 '<div class="gs-actions-hint">Tip: no prediction has been run yet in this '
