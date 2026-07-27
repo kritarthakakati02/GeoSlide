@@ -206,7 +206,7 @@ _SIDEBAR_CSS = """
     flex-shrink: 0;
 }
 .sidebar-status-version {
-    font-size: 0.68rem;
+    font-size: 0.69rem;
     color: #ABA595;
     opacity: 0.55;
     margin-top: 0.25rem;
