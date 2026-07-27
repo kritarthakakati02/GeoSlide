@@ -330,18 +330,40 @@ SHAP_WIRING_CSS = """
 }
 
 /* ============================================================
-   SECTION 2 — LOAD ACTION
+   SECTION 2 — EXPLAINABILITY CONTROLS
    ============================================================ */
 [data-testid="stLayoutWrapper"]:has(> [class*="st-key-section-actions"]) {
     background: var(--ds-surface) !important;
-    text-align: center;
+    border-radius: var(--ds-radius-md) !important;
+    box-shadow: var(--ds-shadow-sm) !important;
     padding: var(--ds-space-6) !important;
+}
+.gs-controls-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.05rem;
+    font-weight: var(--ds-weight-bold);
+    color: var(--ds-text-primary);
+}
+.gs-controls-title svg { color: var(--ds-brand-600); }
+.gs-controls-subtitle {
+    font-size: var(--ds-text-sm);
+    color: var(--ds-text-tertiary);
+    margin-top: 4px;
+    margin-bottom: var(--ds-space-5);
+}
+[class*="st-key-controls-btn-row"] [data-testid="stHorizontalBlock"] {
+    gap: var(--ds-space-4) !important;
+    align-items: stretch;
 }
 [data-testid="stAppViewContainer"] .stButton > button {
     border-radius: var(--ds-radius-full) !important;
     font-weight: var(--ds-weight-semibold);
     font-family: var(--ds-font-base);
     outline: none !important;
+    width: 100%;
+    min-height: 3rem;
     transition: transform var(--ds-transition-base), box-shadow var(--ds-transition-base),
                 background var(--ds-transition-base), border-color var(--ds-transition-base);
 }
@@ -370,7 +392,13 @@ SHAP_WIRING_CSS = """
     transform: translateY(0);
     box-shadow: 0 1px 2px rgba(20, 30, 24, 0.15), 0 8px 18px rgba(28, 68, 51, 0.22) !important;
 }
-.gs-actions-hint { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); margin-top: var(--ds-space-3); }
+.gs-controls-helper {
+    font-size: var(--ds-text-xs);
+    color: var(--ds-text-tertiary);
+    margin-top: var(--ds-space-4);
+    line-height: var(--ds-leading-normal);
+}
+.gs-actions-hint { font-size: var(--ds-text-xs); color: var(--ds-text-tertiary); margin-top: var(--ds-space-2); }
 
 /* ============================================================
    SECTION 3 — PREDICTION SUMMARY
@@ -616,25 +644,52 @@ st.markdown('<div class="gs-section-spacer"></div>', unsafe_allow_html=True)
 
 
 # ============================================================
-# SECTION 2 — LOAD ACTION
+# SECTION 2 — EXPLAINABILITY CONTROLS
 # ============================================================
 
 with st.container(border=True, key="section-actions"):
-    st.button("Load Latest Prediction", type="primary", on_click=_load_latest_prediction, icon=":material/download:")
-    st.button(
-        "SHAP Analysis",
-        type="primary",
-        on_click=_run_shap_analysis,
-        disabled=not st.session_state.get("prediction_loaded", False),
-        icon=":material/psychology:",
+    st.markdown(
+        f'<div class="gs-controls-title">{_icon("cpu", 18)} Explainability Controls</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="gs-controls-subtitle">Load the latest prediction and generate a '
+        "SHAP explanation.</div>",
+        unsafe_allow_html=True,
+    )
+
+    with st.container(key="controls-btn-row"):
+        btn_col_load, btn_col_run = st.columns(2, gap="medium")
+        with btn_col_load:
+            st.button(
+                "Load Latest Prediction",
+                type="primary",
+                on_click=_load_latest_prediction,
+                icon=":material/download:",
+                use_container_width=True,
+            )
+        with btn_col_run:
+            st.button(
+                "Generate SHAP Analysis",
+                type="primary",
+                on_click=_run_shap_analysis,
+                disabled=not st.session_state.get("prediction_loaded", False),
+                icon=":material/psychology:",
+                use_container_width=True,
+            )
+
+    st.markdown(
+        '<div class="gs-controls-helper">The latest prediction is used to compute local '
+        "SHAP feature contributions.</div>",
+        unsafe_allow_html=True,
     )
 
     explanation = st.session_state.get("shap_explanation")
     if explanation is None:
         if st.session_state.get("prediction_loaded"):
             st.markdown(
-                '<div class="gs-actions-hint">Prediction loaded. Click <b>SHAP Analysis</b> '
-                "above to generate the explainability breakdown.</div>",
+                '<div class="gs-actions-hint">Prediction loaded. Click <b>Generate SHAP '
+                "Analysis</b> above to generate the explainability breakdown.</div>",
                 unsafe_allow_html=True,
             )
         else:
