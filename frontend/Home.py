@@ -690,4 +690,4 @@ with st.container(border=True, key="section-techstack"):
             ("table", "Pandas"),
             ("hash", "NumPy"),
         ]
-    )
+    
