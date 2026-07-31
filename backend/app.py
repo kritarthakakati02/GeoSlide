@@ -1,6 +1,4 @@
 """
-Module 9.5 - Prediction API
-
 FastAPI application entrypoint for the GeoSlide service.
 
 This module wires together the application lifespan (model loading),

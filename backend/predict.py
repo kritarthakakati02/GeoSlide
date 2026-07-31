@@ -1,6 +1,4 @@
 """
-Module 9.3 - Prediction Engine
-GeoSlide Project
 
 This module is responsible ONLY for turning a raw feature list into a
 landslide prediction using the previously trained/saved KNN model,

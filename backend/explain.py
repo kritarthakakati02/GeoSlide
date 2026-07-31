@@ -1,5 +1,4 @@
 """
-Module 9.6 - Explainability Engine
 GeoSlide Project
 
 This module is responsible ONLY for turning a raw feature list into a

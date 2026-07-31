@@ -1,6 +1,4 @@
 """
-Module 9.2 - Model Loader
-==========================
 Responsible ONLY for locating, loading, and exposing GeoSlide's trained
 model artifacts. Contains no prediction logic and no API endpoints.
 

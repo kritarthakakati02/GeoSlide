@@ -1,6 +1,4 @@
 """
-Module 9.4 - API Schemas
-
 This module defines the Pydantic schemas used for validating incoming
 prediction requests and structuring outgoing prediction responses for
 the GeoSlide API.
