@@ -108,9 +108,8 @@ pip install -r requirements.txt
 ### Start the backend
 
 ```bash
-cd backend
 
-uvicorn app:app --reload
+python -m uvicorn backend.app:app --reload --port 8000
 ```
 
 ### Start the frontend
@@ -118,7 +117,7 @@ uvicorn app:app --reload
 ```bash
 cd frontend
 
-streamlit run Home.py
+python -m streamlit run Home.py --server.port 8502
 ```
 
 The frontend communicates with the FastAPI backend running locally.
